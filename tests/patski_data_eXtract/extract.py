@@ -1,6 +1,5 @@
 import pandas as pd
-from package.eXtract.process import process
-from package.eXtract.cdd import compute_cdd
+from package.eXtract.extract import eXtract
 
 columns = [
     "chromosome_1",  # First chromosome
@@ -22,9 +21,8 @@ chromosome_lengths = [('chr1', 195471971), ('chr2', 182113224), ('chr3', 1600396
                       ('chr13', 120421639), ('chr14', 124902244), ('chr15', 104043685), ('chr16', 98207768), 
                       ('chr17', 94987271), ('chr18', 90702639), ('chr19', 61431566), ('chrX', 171031299)]
 
-cell_id = 'SCG0088_TTGTGTGCACGGTACT-1'
 path = "C:/Users/zareb/OneDrive/Desktop/Studies/Inżynierka/CIRCLET/CIRCLET_code/CIRCLET/patski.S_5.two.bedpe"
-cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
-cell_matrix = process(cell_df, chromosome_lengths=chromosome_lengths, bin_size=2000000, cell_id=cell_id)
+cell_id = 'SCG0088_TTGTGTGCACGGTACT-1'
 
-print(compute_cdd(cell=cell_matrix))
+cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
+print(eXtract(cell_df=cell_df, cell_id=None))
