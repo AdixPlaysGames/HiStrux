@@ -19,11 +19,17 @@ columns = [
 path = "C:/Users/zareb/OneDrive/Desktop/Studies/Inżynierka/CIRCLET/CIRCLET_code/CIRCLET/patski.S_5.two.bedpe"
 cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
 
+cell_df['chromosome_1'] = cell_df['chromosome_1'].str[:-2]
+cell_df['chromosome_2'] = cell_df['chromosome_2'].str[:-2]
+
+cell_df = cell_df[cell_df['cell_id'] == 'SCG0088_TTGTGTGCACGGTACT-1']
+
 print(calculate_cis_ab_comp(
     cell_df,
     bin_size = 1_000_000,
-    w  = 7,
+    w  = 11,
     p = 0.85,
-    threshold_percentile= 95,
-    imputation_involved=True
+    threshold_percentile= 91,
+    imputation_involved=True,
+    plot = True
 ))

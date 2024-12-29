@@ -1,5 +1,5 @@
 import pandas as pd
-from package.eXtract.tad import calculate_cis_tads
+from package.eXtract.tad import calculate_cis_tads, compute_tad_features
 
 columns = [
     "chromosome_1",  # First chromosome
@@ -18,14 +18,27 @@ columns = [
 
 path = "C:/Users/zareb/OneDrive/Desktop/Studies/Inżynierka/CIRCLET/CIRCLET_code/CIRCLET/patski.S_5.two.bedpe"
 cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
+cell_df = cell_df[cell_df['cell_id'] == 'SCG0088_TTGTGTGCACGGTACT-1']
 
 print(calculate_cis_tads(
     cell_df,
-    bin_size=500_000,  # zmniejsz rozmiar binu dla większej rozdzielczości
-    w=10,               # bardziej precyzyjne okna
-    p=0.90,            # nieco mniej agresywna imputacja
-    threshold_percentile=85,  # bardziej liberalne granice
+    bin_size=500_000,
+    w=10,
+    p=0.90,
+    threshold_percentile=85,
     imputation_involved=True,
     boundary_threshold=0.19,
-    show_plot=True# więcej punktów granicznych
+    show_plot=True
+))
+
+
+print(compute_tad_features(
+    cell_df,
+    bin_size=500_000,
+    w=10,
+    p=0.90,
+    threshold_percentile=85,
+    imputation_involved=True,
+    boundary_threshold=0.19,
+    show_plot=False
 ))

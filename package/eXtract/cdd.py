@@ -1,49 +1,62 @@
 import numpy as np
-import math
 from collections import defaultdict
 
-def compute_cdd(cell, bin_size=1_000_000, exponent_steps=0.33):
+def compute_cdd(cell: np.ndarray, 
+                bin_size: int = 1_000_000,
+                exponent_steps: float = 0.33):
     """
-    Oblicza rozkład prawdopodobieństwa kontaktów (CDD) w zależności od odległości genomowej,
-    z opcją dostosowania rozmiaru kroków w skali logarytmicznej poprzez parametr exponent_steps.
+    Computes the contact probability distribution (CDD) depending on genomic distance,
+    with an option to adjust logarithmic step size through the 'exponent_steps' parameter.
+    
+    Parameters:
+    -----------
+    cell : numpy.ndarray
+        A 2D contact matrix (N x N), where N is the number of genomic bins.
+    bin_size : int, optional
+        The size of each genomic bin in base pairs (default is 1,000,000 bp).
+    exponent_steps : float, optional
+        Determines the logarithmic step size for binning. For example, exponent_steps=0.1
+        would create finer-grained bins (10 times denser) compared to exponent_steps=1.0.
 
-    cell: 2D numpy.array (N x N) – macierz kontaktów
-    bin_size: rozdzielczość w bp (domyślnie 1 Mb)
-    exponent_steps: wartość określająca krok w skali logarytmicznej.
-                    Np. exponent_steps = 0.1 oznacza, że podział będzie 10-krotnie gęstszy.
+    Returns:
+    --------
+    dict
+        A dictionary containing two keys:
+        - 'bins_array': List of tuples representing the (start, end) of each log bin in log2 scale.
+        - 'probs_array': List of probabilities (normalized contact values) for each bin.
     """
 
     N = cell.shape[0]
-    # Indeksy górnego trójkąta (bez diagonali)
+    # Upper-triangle indices (excluding the main diagonal)
     triu_i, triu_j = np.triu_indices(N, k=1)
-    # Pobieramy odpowiadające im wartości kontaktów
+    # Retrieve the corresponding contact values
     contact_vals = cell[triu_i, triu_j]
 
-    # Filtrujemy wartości zerowe (lub ujemne - jeśli by się zdarzały)
+    # Filter out zero (or negative) values if any occur
     mask_nonzero = contact_vals > 0
     triu_i = triu_i[mask_nonzero]
     triu_j = triu_j[mask_nonzero]
     contact_vals = contact_vals[mask_nonzero]
 
-    # Obliczamy odległość genomową
+    # Calculate genomic distance
     dists = (triu_j - triu_i) * bin_size
 
-    # Liczymy log2(dist)
+    # Compute log2(distance)
     log_vals = np.log2(dists)
 
-    # Wyznaczamy bin_start i bin_end, czyli przedziały log-binów
+    # Determine bin_start and bin_end for log-binning
     bin_starts = np.floor(log_vals / exponent_steps) * exponent_steps
     bin_ends = bin_starts + exponent_steps
 
-    # Zliczamy sumarycznie liczbę (waga) kontaktów w każdej "szufladce" log-bin
+    # Aggregate the sum of contact values in each log-bin "drawer"
     dist_counts = defaultdict(float)
-    dist_sums = float(np.sum(contact_vals))  # całkowita liczba kontaktów (do przeliczenia na prawdopodobieństwa)
+    dist_sums = float(np.sum(contact_vals))  # total number of contacts (for probability calculation)
 
     for bs, be, cval in zip(bin_starts, bin_ends, contact_vals):
         dist_counts[(bs, be)] += cval
 
-    # Przeliczamy na prawdopodobieństwa
-    bins_array = sorted(dist_counts.keys())  # klucze posortowane po bin_start
+    # Convert counts to probabilities
+    bins_array = sorted(dist_counts.keys())  # keys sorted by bin_start
     probs_array = [dist_counts[b] / dist_sums for b in bins_array]
 
     return {

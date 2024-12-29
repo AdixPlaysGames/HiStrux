@@ -3,14 +3,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from .imputation import imputation
 
-
 def compute_directionality_index(contact_matrix, window=5):
     """
-    Uproszczone wyliczanie directionality index (DI).
+    Computes a simplified version of the directionality index (DI).
     """
     N = contact_matrix.shape[0]
     di_values = np.zeros(N, dtype=float)
 
+    # For each bin 'i', define left and right windows. 
+    # Compute the sum of contacts on the left side and on the right side, 
+    # then use a ratio to determine the directionality index.
     for i in range(N):
         left_start = max(i - window, 0)
         left_end   = i
@@ -32,11 +34,12 @@ def compute_directionality_index(contact_matrix, window=5):
 
 def detect_tad_boundaries(di_values, threshold=0.8):
     """
-    Bardzo uproszczona detekcja granic TAD na podstawie directionality index.
+    A very simplified TAD boundary detection based on the directionality index (DI).
     """
     boundaries = []
     prev_sign = np.sign(di_values[0])
 
+    # Traverse the DI array and look for sign changes that exceed the specified threshold.
     for i in range(1, len(di_values)):
         cur_sign = np.sign(di_values[i])
         if cur_sign != prev_sign and abs(di_values[i]) > threshold:
@@ -47,13 +50,15 @@ def detect_tad_boundaries(di_values, threshold=0.8):
 
 def build_tad_df(chrom, boundaries, n_bins, bin_size):
     """
-    Z listy granic buduje ramkę danych z kolumnami:
+    From a list of boundaries, build a DataFrame containing:
       [chromosome, tad_id, start_bin, end_bin, start_bp, end_bp, size_in_bins]
     """
     tads = []
     start_bin = 0
     tad_id = 0
 
+    # Each boundary indicates the start of a new TAD, 
+    # so create TAD segments between consecutive boundaries.
     for b in boundaries:
         end_bin = b - 1
         if end_bin < start_bin:
@@ -62,10 +67,11 @@ def build_tad_df(chrom, boundaries, n_bins, bin_size):
         start_bin = b
         tad_id += 1
 
-    # Ostatni TAD
+    # Add a final TAD segment if any bins remain.
     if start_bin < n_bins:
         tads.append((chrom, tad_id, start_bin, n_bins - 1))
 
+    # Convert the list of TADs into a DataFrame, including genomic coordinates.
     data_out = []
     for (chr_, tid, sb, eb) in tads:
         sb_bp = sb * bin_size
@@ -85,12 +91,15 @@ def build_tad_df(chrom, boundaries, n_bins, bin_size):
 
 def compute_tad_stats(tad_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Liczy wybrane statystyki TAD dla każdej pary (chromosom).
+    Computes selected TAD statistics for each chromosome.
     """
+    # If the DataFrame is empty, return an empty stats table.
     if tad_df.empty:
-        return pd.DataFrame(columns=["chromosome", "n_tads", "mean_size_in_bins", 
+        return pd.DataFrame(columns=["chromosome", "n_tads", "mean_size_in_bins",
                                      "min_size_in_bins", "max_size_in_bins"])
 
+    # Group by chromosome and calculate basic statistics such as 
+    # the number of TADs, mean, minimum, and maximum size in bins.
     stats_list = []
     for chrom, group in tad_df.groupby("chromosome"):
         n_tads = len(group)
@@ -108,7 +117,6 @@ def compute_tad_stats(tad_df: pd.DataFrame) -> pd.DataFrame:
     stats_df = pd.DataFrame(stats_list)
     return stats_df
 
-
 def plot_tads_for_chrom(
     contact_matrix: np.ndarray,
     boundaries: list[int],
@@ -117,30 +125,20 @@ def plot_tads_for_chrom(
     show_plot: bool = True
 ):
     """
-    Rysuje macierz kontaktów (np. heatmapę) dla danego chromosomu
-    oraz rysuje pionowe i poziome linie w miejscach granic TAD.
-    
-    Parametry:
-    -----------
-      contact_matrix: 2D np.ndarray (N x N)
-      boundaries: lista indeksów binów, np. [3, 48, 195] itd.
-      chrom: str
-      out_prefix: opcjonalny prefix do zapisu wykresu do pliku
-      show_plot: czy pokazywać plt.show() (domyślnie True)
-                 jeśli generujesz wiele chromosomów, można ustawić False
-                 i robić plt.close() / plt.savefig() w pętli
+    Plots the contact matrix (heatmap) for a given chromosome
+    and draws vertical/horizontal lines at TAD boundaries.
     """
     N = contact_matrix.shape[0]
     
     fig, ax = plt.subplots(figsize=(6, 5))
-    # Dla lepszej czytelności można użyć log1p:
+    # For better visibility, apply a logarithmic transform: log1p.
     cax = ax.imshow(np.log1p(contact_matrix), 
                     cmap='Reds', 
                     origin='upper',
                     interpolation='nearest')
     fig.colorbar(cax, ax=ax, fraction=0.046, pad=0.04)
 
-    # Dodajemy linie dla boundary:
+    # Draw boundary lines for each TAD boundary in both x and y directions.
     for b in boundaries:
         if 0 < b < N:
             ax.axhline(y=b - 0.5, color='blue', linewidth=0.7)
@@ -150,15 +148,15 @@ def plot_tads_for_chrom(
     ax.set_xlabel("bin index")
     ax.set_ylabel("bin index")
 
-    # Opcjonalne zapisywanie
+    # Optionally save the figure.
     if out_prefix is not None:
         plt.savefig(f"{out_prefix}_{chrom}_tads.png", dpi=150, bbox_inches='tight')
-    # Pokazanie/ukrycie
+
+    # Show the plot or close it, based on the show_plot parameter.
     if show_plot:
         plt.show()
     else:
         plt.close(fig)
-
 
 def calculate_cis_tads(
     contacts_df: pd.DataFrame,
@@ -173,31 +171,57 @@ def calculate_cis_tads(
     substring: int = 2
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Rozszerzona wersja, która (po wykryciu TAD-ów) tworzy 
-    wykresy macierzy kontaktów wraz z granicami TAD dla każdego chromosomu.
+    Extended version that, after detecting TADs, creates 
+    contact matrix plots with TAD boundaries for each chromosome.
 
-    Parametry (jak poprzednio), plus:
-      - out_prefix: prefix do zapisu wykresów do plików PNG (jeśli None, nie zapisujemy).
-      - show_plot: czy wyświetlać plt.show() (True) czy tylko zapisać do pliku/pozamykać.
+    Parameters:
+    -----------
+    contacts_df : pd.DataFrame
+        Input DataFrame with columns like chromosome_1, start_1, ...
+    bin_size : int, optional
+        Bin size in base pairs, default is 1,000,000.
+    w : int, optional
+        Window size for directionality index and (optional) imputation, default 5.
+    p : float, optional
+        Probability for random walk with restart (used in imputation), default 0.85.
+    threshold_percentile : int, optional
+        Threshold percentile for imputation binarization, default 90.
+    imputation_involved : bool, optional
+        Whether to apply the imputation step, default False.
+    boundary_threshold : float, optional
+        Threshold for directionality index sign changes to detect boundaries, default 0.8.
+    out_prefix : str, optional
+        Prefix for saving output plots as PNG files; if None, no files are saved.
+    show_plot : bool, optional
+        If True, displays plots using plt.show(); if False, plots are not displayed.
+    substring : int, optional
+        Number of characters to trim from the end of chromosome names, default 2.
 
-    Zwraca:
-      (stats_df, tad_df)
+    Returns:
+    --------
+    dict
+        A dictionary with:
+          "stats_df" : pd.DataFrame containing TAD statistics,
+          "tad_df"   : pd.DataFrame with all identified TADs.
     """
-    # Filtrowanie cis
+
+    # Shorten chromosome names by removing the last 'substring' characters
     contacts_df['chromosome_1'] = contacts_df['chromosome_1'].str[:-substring]
     contacts_df['chromosome_2'] = contacts_df['chromosome_2'].str[:-substring]
     
+    # Filter for cis contacts (same chromosome)
     cis_df = contacts_df[contacts_df["chromosome_1"] == contacts_df["chromosome_2"]].copy()
     if cis_df.empty:
-        raise ValueError("Brak cis-kontaktów w podanej ramce danych.")
+        raise ValueError("No cis-contacts found in the provided DataFrame.")
 
-    # Biny
+    # Compute bin IDs
     cis_df["bin_1"] = cis_df["start_1"] // bin_size
     cis_df["bin_2"] = cis_df["start_2"] // bin_size
 
     chrom_list = cis_df["chromosome_1"].unique()
     all_tads = []
 
+    # Process each chromosome independently
     for chrom in sorted(chrom_list):
         chrom_data = cis_df[cis_df["chromosome_1"] == chrom]
         bin_contacts = (
@@ -207,10 +231,12 @@ def calculate_cis_tads(
             .reset_index(name="contact_count")
         )
 
+        # Determine size of the matrix
         max_bin_id = bin_contacts[["bin_1", "bin_2"]].max().max()
         N = max_bin_id + 1
         contact_matrix = np.zeros((N, N), dtype=float)
 
+        # Fill the contact matrix symmetrically
         for row in bin_contacts.itertuples(index=False):
             i = row.bin_1
             j = row.bin_2
@@ -218,7 +244,7 @@ def calculate_cis_tads(
             contact_matrix[i, j] += c
             contact_matrix[j, i] += c
 
-        # (opcjonalnie) imputacja
+        # Imputation step (optional)
         if imputation_involved:
             contact_matrix = imputation(
                 contact_matrix,
@@ -227,13 +253,15 @@ def calculate_cis_tads(
                 threshold_percentile=threshold_percentile
             )
 
-        # Detekcja TAD
+        # Calculate directionality index and detect TAD boundaries
         di_vals = compute_directionality_index(contact_matrix, window=w)
         boundaries = detect_tad_boundaries(di_vals, threshold=boundary_threshold)
+
+        # Build a DataFrame containing TADs
         tad_df_chrom = build_tad_df(chrom, boundaries, N, bin_size)
         all_tads.append(tad_df_chrom)
 
-        # RYSOWANIE WYKRESU
+        # Plot the contact matrix and TAD boundaries
         plot_tads_for_chrom(
             contact_matrix=contact_matrix,
             boundaries=boundaries,
@@ -242,10 +270,150 @@ def calculate_cis_tads(
             show_plot=show_plot
         )
 
-    # Sklejamy TAD-y
+    # Concatenate TAD data for all chromosomes
     tad_df = pd.concat(all_tads, ignore_index=True)
-    # Statystyki
+
+    # Compute basic statistics on TAD sizes
     stats_df = compute_tad_stats(tad_df)
 
-    return {"stats_df": stats_df,
-            "tad_df": tad_df}
+    # Return both the statistics DataFrame and the TAD DataFrame
+    return {"stats_df": stats_df, "tad_df": tad_df}
+
+
+def compute_cell_features(tad_stats: pd.DataFrame, tad_boundaries: pd.DataFrame) -> pd.DataFrame:
+    """
+    Computes a feature vector for each chromosome based on TAD statistics.
+
+    Parameters:
+    -----------
+    tad_stats : pd.DataFrame
+        TAD statistics with columns:
+        [chromosome, n_tads, mean_size_in_bins, min_size_in_bins, max_size_in_bins]
+
+    tad_boundaries : pd.DataFrame
+        TAD boundaries with columns:
+        [chromosome, tad_id, start_bin, end_bin, start_bp, end_bp, size_in_bins]
+
+    Returns:
+    --------
+    features_df : pd.DataFrame
+        A feature vector for each chromosome with columns:
+        [chromosome, n_tads, mean_size_in_bins, min_size_in_bins, max_size_in_bins,
+         range_size_in_bins, median_size_in_bins, std_size_in_bins, tad_density,
+         max_tad_ratio, min_tad_ratio]
+    """
+    feature_list = []
+
+    # Iterate through each chromosome's statistics
+    for chrom, stats in tad_stats.groupby("chromosome"):
+        # Determine the chromosome length in bins
+        genome_length_in_bins = tad_boundaries.loc[tad_boundaries["chromosome"] == chrom, "end_bin"].max() + 1
+
+        # Get the sizes of TADs for the current chromosome
+        tad_sizes = tad_boundaries.loc[tad_boundaries["chromosome"] == chrom, "size_in_bins"]
+
+        # Extract relevant statistics from tad_stats
+        n_tads = stats["n_tads"].values[0]
+        mean_size = stats["mean_size_in_bins"].values[0]
+        min_size = stats["min_size_in_bins"].values[0]
+        max_size = stats["max_size_in_bins"].values[0]
+
+        # Compute additional features
+        range_size = max_size - min_size
+        median_size = tad_sizes.median()
+        std_size = tad_sizes.std()
+        tad_density = n_tads / genome_length_in_bins
+        max_tad_ratio = max_size / genome_length_in_bins
+        min_tad_ratio = min_size / genome_length_in_bins
+
+        # Collect the results for this chromosome
+        feature_list.append({
+            "chromosome": chrom,
+            "n_tads": n_tads,
+            "mean_size_in_bins": mean_size,
+            "min_size_in_bins": min_size,
+            "max_size_in_bins": max_size,
+            "range_size_in_bins": range_size,
+            "median_size_in_bins": median_size,
+            "std_size_in_bins": std_size,
+            "tad_density": tad_density,
+            "max_tad_ratio": max_tad_ratio,
+            "min_tad_ratio": min_tad_ratio,
+        })
+
+    features_df = pd.DataFrame(feature_list)
+    return features_df
+
+
+def compute_tad_features(
+    contacts_df: pd.DataFrame,
+    bin_size: int = 1_000_000,
+    w: int = 10,
+    p: float = 0.85,
+    threshold_percentile: int = 91,
+    imputation_involved: bool = False,
+    boundary_threshold: float = 0.3,
+    out_prefix: str = None,
+    show_plot: bool = False
+):
+    """
+    Orchestrates TAD detection and feature computation for each chromosome.
+
+    Parameters:
+    -----------
+    contacts_df : pd.DataFrame
+        Input DataFrame containing contact information (chromosome_1, start_1, etc.).
+    bin_size : int, optional
+        Bin size in base pairs; defaults to 1,000,000.
+    w : int, optional
+        Window size for TAD boundary detection (and possibly imputation), default 10.
+    p : float, optional
+        Probability parameter for the random walk with restart (imputation), default 0.85.
+    threshold_percentile : int, optional
+        Threshold percentile for binarization in imputation, default 91.
+    imputation_involved : bool, optional
+        Whether to run imputation on the contact matrix, default False.
+    boundary_threshold : float, optional
+        Threshold for TAD boundary detection based on directionality index, default 0.3.
+    out_prefix : str, optional
+        Prefix to save plots to files; if None, no files are saved.
+    show_plot : bool, optional
+        Whether to display the plot (True) or not (False), default False.
+
+    Returns:
+    --------
+    dictionary
+        A dictionary containing the average number of TADs, average mean TAD size in bins,
+        and average TAD density across all chromosomes.
+    """
+    # Detect TADs and retrieve their stats and boundaries
+    tad_results = calculate_cis_tads(
+        contacts_df,
+        bin_size=bin_size,
+        w=w,
+        p=p,
+        threshold_percentile=threshold_percentile,
+        imputation_involved=imputation_involved,
+        boundary_threshold=boundary_threshold,
+        out_prefix=out_prefix,
+        show_plot=show_plot
+    )
+
+    # The returned dictionary from calculate_cis_tads 
+    # has keys "stats_df" (TAD stats) and "tad_df" (TAD boundaries)
+    tad_stats = tad_results["stats_df"]
+    tad_boundaries = tad_results["tad_df"]
+
+    # Compute additional features based on TAD statistics
+    features_df = compute_cell_features(tad_stats, tad_boundaries)
+
+    # Extract summary values
+    n_tads_mean = features_df['n_tads'].mean()
+    mean_bin_size = features_df['mean_size_in_bins'].mean()
+    tad_density_mean = features_df['tad_density'].mean()
+
+    return {
+        "n_tads_mean": n_tads_mean,
+        "mean_bin_size": mean_bin_size,
+        "tad_density_mean": tad_density_mean
+    }

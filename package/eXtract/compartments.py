@@ -1,81 +1,101 @@
 import pandas as pd
 import numpy as np
-from sklearn.decomposition import PCA # type: ignore
+from sklearn.decomposition import PCA  # type: ignore
 from .imputation import imputation
+import matplotlib.pyplot as plt
+from .visualization import visualize
 
 def compute_ab_compartments(
     contacts_df: pd.DataFrame,
-    bin_size: int = 1_000_000, w=5, p=0.85, threshold_percentile=90,
-    imputation_involved=False
+    bin_size: int = 1_000_000, 
+    w: int = 11, 
+    p: float = 0.85, 
+    threshold_percentile: int = 90,
+    imputation_involved: bool = False,
+    plot: bool = False
 ) -> pd.DataFrame:
     """
-    Oblicza wartości PC1 (główny komponent) dla każdego bina w genomie,
-    aby wyznaczyć A/B compartments metodą PCA.
+    Computes PC1 (the first principal component) for each bin in the genome
+    to identify A/B compartments using PCA.
 
-    Parametry:
-    ----------
+    Parameters:
+    -----------
     contacts_df : pd.DataFrame
-        Ramka danych z kolumnami:
-        - chromosome_1
-        - start_1
-        - end_1
-        - chromosome_2
-        - start_2
-        - end_2
-        - (opcjonalnie) mapping_quality, cell_id, itp.
+        Input DataFrame with the following columns:
+          - chromosome_1
+          - start_1
+          - end_1
+          - chromosome_2
+          - start_2
+          - end_2
+        (Optionally, columns like mapping_quality, cell_id, etc. may be present.)
 
-    bin_size : int
-        Wielkość bina (w bp); domyślnie 1 Mb = 1,000,000 bp.
+    bin_size : int, optional
+        The bin size in base pairs; defaults to 1,000,000 bp (1 Mb).
 
-    Zwraca:
+    w : int, optional
+        Parameter for the imputation function (if used). Defaults to 5.
+
+    p : float, optional
+        Another parameter for the imputation function (if used). Defaults to 0.85.
+
+    threshold_percentile : int, optional
+        Threshold percentile for the imputation function. Defaults to 90.
+
+    imputation_involved : bool, optional
+        Whether to apply the imputation step on the contact matrix. Defaults to False.
+    
+    plot : bool, optional
+        Display each chromosome for better undrestanding.
+
+    Returns:
     --------
     result_df : pd.DataFrame
-        Ramka danych z kolumnami:
-        - chromosome
-        - bin_start
-        - bin_end
-        - PC1
-        - compartment_label  (np. 'A' lub 'B')
+        A DataFrame with the following columns:
+          - chromosome
+          - bin_start
+          - bin_end
+          - PC1
+          - compartment_label  (e.g., 'A' or 'B')
 
-        W kolejności rosnącej po chromosomie i binach.
+        The rows are sorted in ascending order by chromosome and bin.
     """
 
-    # --- 1. Filtrowanie wyłącznie cis (kontakty w obrębie tego samego chromosomu) ---
+    # 1. Filter to keep only cis contacts (interactions within the same chromosome).
     cis_df = contacts_df[contacts_df["chromosome_1"] == contacts_df["chromosome_2"]].copy()
     if len(cis_df) == 0:
-        raise ValueError("Nie znaleziono cis-kontaktów w przekazanej ramce danych.")
+        raise ValueError("No cis-contacts found in the input DataFrame.")
 
-    # --- 2. Wyznaczenie zakresu (min, max) dla każdego chromosomu, żeby wiedzieć ile binów potrzebujemy ---
-    # Przy okazji ustalamy ID binu dla 'start_1', 'start_2' itp.
+    # 2. Determine the range (min, max) for each chromosome to know how many bins are required.
+    #    Also assign a bin ID for 'start_1' and 'start_2'.
     def get_bin_id(start, bin_size):
         return start // bin_size
 
     cis_df["bin_1"] = cis_df["start_1"].apply(lambda x: get_bin_id(x, bin_size))
     cis_df["bin_2"] = cis_df["start_2"].apply(lambda x: get_bin_id(x, bin_size))
 
-    # --- 3. Dla wygody grupujemy osobno każdy chromosom ---
+    # 3. Group data by chromosome for convenience.
     chrom_list = cis_df["chromosome_1"].unique()
 
-    # Lista wyników do scalania
+    # Prepare a list to collect results for all chromosomes.
     results = []
 
     for chrom in sorted(chrom_list):
         chrom_data = cis_df[cis_df["chromosome_1"] == chrom]
 
-        # Jeśli mamy sumę mapping_quality na bin – można to zsumować.
-        # Albo, jeżeli mamy liczbę kontaktów – też można to zliczyć.
-        # Tu załóżmy, że liczymy po prostu liczbę kontaktów (count):
+        # Either sum mapping_quality per bin or count the number of contacts.
+        # Here we assume counting the number of contacts in each (bin_1, bin_2).
         bin_contacts = (
             chrom_data
             .groupby(["bin_1", "bin_2"])
-            .size()  # -> liczba kontaktów w danym bin_1, bin_2
+            .size()  # number of contacts in each bin_1, bin_2
             .reset_index(name="contact_count")
         )
 
-        # Ustalamy maksymalny ID binu (żeby wiedzieć, jak duża będzie macierz)
+        # Determine the maximum bin ID so we know the size of the matrix.
         max_bin_id = bin_contacts[["bin_1", "bin_2"]].max().max()
 
-        # Budujemy macierz (N x N) dla danego chromosomu
+        # Build an (N x N) contact matrix for this chromosome.
         N = max_bin_id + 1
         contact_matrix = np.zeros((N, N), dtype=float)
 
@@ -83,59 +103,40 @@ def compute_ab_compartments(
             i = row.bin_1
             j = row.bin_2
             c = row.contact_count
-            # Macierz symetryczna (zakładamy scHi-C w stylu -> i, j == j, i)
+            # The matrix is assumed symmetric (for scHi-C).
             contact_matrix[i, j] += c
             contact_matrix[j, i] += c
 
+        # If imputation is involved, call the imputation function.
         if imputation_involved is True:
-          contact_matrix = imputation(contact_matrix, w=w, p=p, threshold_percentile=threshold_percentile)
+            contact_matrix = imputation(
+                contact_matrix, 
+                w=w, 
+                p=p, 
+                threshold_percentile=threshold_percentile
+            )
+        
+        # If there is need to visualize process -> plot process
+        if plot is True:
+          visualize(contact_matrix, title=chrom)
 
-
-        # --- 4. Zamieniamy macierz na macierz korelacji (lub O/E, etc.) ---
-        # Dla prostoty: weźmy korelację Pearsona między kolumnami (binami),
-        # co często się robi w pakietach do compartments.
-        # Trzeba uważać na wiersze z zerami (niskie coverage).
-        # Często poprzedza się to normalizacją - np. liczymy sumę w wierszu, sumę w kolumnie.
-        # Tu dla uproszczenia: liczymy po prostu korelację kolumn.
-
-        # Jeżeli kolumna to bin, musimy wziąć contact_matrix.T, bo np. np.corrcoef liczy korelację wzdłuż wierszy.
-        # Bierzemy np. corrcoef(contact_matrix) lub corrcoef(contact_matrix.T) zależnie od konwencji.
-
+        # 4. Convert the contact matrix into a correlation matrix (or O/E, etc.).
         with np.errstate(invalid='ignore'):
             corr_matrix = np.corrcoef(contact_matrix)
 
-        # Zdarza się, że jakieś biny są same 0 => pojawi się NaN w korelacji.
-        # Możemy je później wykluczyć z PCA albo zastąpić 0.
+        # Replace possible NaN values in the correlation matrix with 0.0
         corr_matrix = np.nan_to_num(corr_matrix, nan=0.0)
 
-        # --- 5. PCA po macierzy korelacji ---
-        # PCA użyjemy z sklearn.decomposition
+        # 5. Perform PCA on the correlation matrix.
+        #    We treat each bin as a "sample" and its correlation values with all bins as "features."
         pca = PCA(n_components=1)
-        # Uwaga: aby puścić PCA na macierzy korelacji NxN, musimy mieć NxN obserwacji,
-        # a standardowo PCA oczekuje X w postaci (n_samples, n_features).
-        # Rozwiązanie: bierzemy wektory wierszy z corr_matrix lub kolumn.
-        # Z reguły compartments wyznacza się: PC1 w kolumnach, więc X = corr_matrix.
-        # Ale pamiętajmy, że musimy mieć w (n_samples, n_features).
-        # Weźmy corr_matrix jako dane NxN i puśćmy PCA wprost, przy czym interpretacja:
-        # "sample" = bin, "features" = korelacje z innymi binami.
-        # Ewentualnie:
         X = corr_matrix
-
         pca.fit(X)
-        # pc1 = pca.components_[0]  # To jest wektor 1 x N, da nam wagi cechy, ewentualnie
-        # ALE w sklearn, pca.components_[0] to "vector of features" – w tym wypadku "binów".
-        # Zwykle do compartments bierze się współrzędne w przestrzeni PC1 = pca.transform(X)[:, 0].
-        # Obie metody mają sens, bo PC1 bywa definiowany różnie w zależności od konwencji.
 
+        # PC1 scores for each bin (size N).
         pc1_coords = pca.transform(X)[:, 0]
-        # pc1_coords to tablica wielkości N, czyli "score" dla każdego bina.
 
-        # Normalnie może się zdarzyć, że PC1 w niektórych pracach jest odwrócony
-        # (tj. '+' = A, '-' = B), a w innych na odwrót.
-        # Często ustala się znak tak, by A odpowiadało regionom bogatym w geny/GC.
-        # Tutaj zostawiamy surowy sygnał.
-
-        # --- 6. Budujemy ramkę wynikową dla danego chromosomu ---
+        # 6. Construct the output DataFrame for this chromosome.
         data_out = []
         for bin_id in range(N):
             start_bp = bin_id * bin_size
@@ -150,55 +151,56 @@ def compute_ab_compartments(
         )
         results.append(chrom_df)
 
-    # Scalanie w jedną ramkę
+    # Concatenate results for all chromosomes into one DataFrame.
     result_df = pd.concat(results, ignore_index=True)
-    # Ewentualnie sortujemy
+    # Sort by chromosome and bin_start in ascending order.
     result_df.sort_values(by=["chromosome", "bin_start"], inplace=True)
 
     return result_df
 
 
-def compute_ab_stats(result_df: pd.DataFrame, contacts_df: pd.DataFrame, bin_size: int = 1_000_000):
-    """
-    Prosty przykład funkcji liczącej np. 'cis AB fraction',
-    tj. udział kontaktów A-A, B-B oraz A-B w kontaktach cis (dla całego genomu lub per chromosom).
 
-    Parametry:
-    ----------
-    result_df: pd.DataFrame
-        Wynik funkcji `compute_ab_compartments`, tj. kolumny:
+def compute_ab_stats(result_df: pd.DataFrame,
+                     contacts_df: pd.DataFrame, 
+                     bin_size: int = 1_000_000):
+    """
+    Function that calculates the 'cis AB fraction':
+    the proportion of A-A, B-B, and A-B contacts in cis (for the entire genome or per chromosome).
+
+    Parameters:
+    -----------
+    result_df : pd.DataFrame
+        The result of the `compute_ab_compartments` function, with columns:
         [chromosome, bin_id, bin_start, bin_end, PC1, compartment_label]
 
-    contacts_df: pd.DataFrame
-        Oryginalna ramka z kontaktami (chromosome_1 == chromosome_2).
+    contacts_df : pd.DataFrame
+        The original contacts DataFrame (where chromosome_1 == chromosome_2).
 
-    bin_size: int
-        Wielkość bina.
+    bin_size : int
+        Bin size in base pairs.
 
-    Zwraca:
+    Returns:
     --------
-    ab_stats: pd.DataFrame
-        Tabela zliczająca liczbę kontaktów A-A, B-B oraz A-B (i ich proporcje).
+    ab_stats : pd.DataFrame
+        A table counting the number of A-A, B-B, and A-B contacts (and their fractions).
     """
-    # Filtrowanie tylko cis:
+    # Filter only cis contacts (same chromosome)
     cis_df = contacts_df[contacts_df["chromosome_1"] == contacts_df["chromosome_2"]].copy()
-    # Dodajemy bin_id dla start_1, start_2
+
+    # Assign bin IDs for start_1 and start_2
     def get_bin_id(start):
         return start // bin_size
 
     cis_df["bin_1"] = cis_df["start_1"].apply(get_bin_id)
     cis_df["bin_2"] = cis_df["start_2"].apply(get_bin_id)
 
-    # Słownik: (chrom, bin_id) -> 'A' lub 'B'
+    # Dictionary: (chromosome, bin_id) -> 'A' or 'B'
     compartment_map = {}
     for row in result_df.itertuples():
         compartment_map[(row.chromosome, row.bin_id)] = row.compartment_label
 
-    # Zliczamy, ile jest kontaktów A-A, B-B, A-B
-    # Zakładamy, że liczymy "liczbę kontaktów",
-    # jeśli mamy mapping_quality i chcemy sumę, to lekko modyfikujemy kod.
-    # Poniżej liczymy 'count' każdy kontakt = 1.
-
+    # Count how many A-A, B-B, and A-B contacts
+    # We assume each contact = 1 (if mapping_quality is available, the code can be adapted).
     stats = {"AA": 0, "BB": 0, "AB": 0}
     for row in cis_df.itertuples():
         chrom = row.chromosome_1
@@ -218,7 +220,7 @@ def compute_ab_stats(result_df: pd.DataFrame, contacts_df: pd.DataFrame, bin_siz
     if total == 0:
         return pd.DataFrame({"contact_type": [], "count": [], "fraction": []})
 
-    # Tworzymy dataframe z wynikami
+    # Create a DataFrame for the result
     contact_types = []
     for k in ["AA", "BB", "AB"]:
         contact_types.append(
@@ -238,20 +240,50 @@ def calculate_cis_ab_comp(
     w: int = 5,
     p: float = 0.85,
     threshold_percentile: int = 90,
-    imputation_involved=False
+    imputation_involved=False,
+    plot: bool = False
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Calculates A/B compartments and then computes A-B contact statistics.
 
-    # 1) Obliczamy A/B compartments
+    Parameters:
+    -----------
+    contacts_df : pd.DataFrame
+        Input DataFrame with contact information (including columns chromosome_1, chromosome_2, etc.).
+
+    bin_size : int, optional
+        The bin size in base pairs, default 1,000,000 bp.
+
+    w : int, optional
+        Parameter passed to the imputation function, default 5.
+
+    p : float, optional
+        Parameter passed to the imputation function, default 0.85.
+
+    threshold_percentile : int, optional
+        Percentile threshold for the imputation function, default 90.
+
+    imputation_involved : bool, optional
+        Whether to run imputation on the contact matrix, default False.
+
+    Returns:
+    --------
+    tuple[pd.DataFrame, pd.DataFrame]
+        - A/B compartment statistics DataFrame.
+    """
+
+    # 1) Compute A/B compartments
     compartments_df = compute_ab_compartments(
         contacts_df=contacts_df,
         bin_size=bin_size,
         w=w,
         p=p,
         threshold_percentile=threshold_percentile,
-        imputation_involved=imputation_involved
+        imputation_involved=imputation_involved,
+        plot=plot
     )
 
-    # 2) Obliczamy statystyki A-B
+    # 2) Compute A-B statistics
     ab_stats_df = compute_ab_stats(
         result_df=compartments_df,
         contacts_df=contacts_df,

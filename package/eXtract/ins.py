@@ -2,47 +2,47 @@ import numpy as np
 
 def compute_insulation_scores(cell: np.ndarray, scale: int) -> np.ndarray:
     """
-    Oblicza insulation score dla każdego bina w macierzy kontaktów Hi-C.
+    Computes the insulation score for each bin in the Hi-C contact matrix.
 
-    Parametry:
+    Parameters:
     -----------
     cell : np.ndarray
-        Kwadratowa macierz kontaktów Hi-C (N x N), już zbinowana do 1 Mb.
+        A square Hi-C contact matrix (N x N), already binned to 1 Mb resolution.
     scale : int
-        Liczba binów po każdej stronie aktualnego bina, które bierzemy do sumowania.
-        Jeśli scale = 1, to rozpatrujemy otoczenie [b-1, b+1] zarówno w wierszach jak i kolumnach.
+        The number of bins on each side of the current bin that will be considered for summation.
+        For example, if scale = 1, the neighborhood [b-1, b+1] is considered in both rows and columns.
 
-    Zwraca:
+    Returns:
     --------
     ins_scores : np.ndarray
-        Wektor długości N z obliczonymi wartościami insulation score dla każdego bina.
+        A length-N vector with computed insulation scores for each bin.
     """
 
     N = cell.shape[0]
     ins_scores = np.zeros(N, dtype=float)
 
-    # Zakładamy, że kontakt matrix jest symetryczna.
-    # Ins(b) = suma kontaktów w oknie (b-scale : b+scale, b-scale : b+scale)
-    # z uwzględnieniem granic macierzy.
+    # We assume the contact matrix is symmetric.
+    # Ins(b) = sum of contacts in the window (b-scale : b+scale, b-scale : b+scale),
+    # taking into account the matrix boundaries.
 
     for b in range(N):
         start = max(b - scale, 0)
         end = min(b + scale, N - 1)
 
-        # Wycinamy podmatrycę z cell. Jest to kwadrat o wymiarach [2*scale + 1]
-        # (lub mniejszy przy krawędziach).
+        # Extract a submatrix from 'cell'. This submatrix is a square of dimensions [2*scale + 1]
+        # (or smaller at the edges).
         submat = cell[start:end+1, start:end+1]
 
-        # Suma wszystkich kontaktów w tym podobszarze:
-        ins_scores[b] = np.nansum(submat)  # używamy nansum na wypadek wartości NaN
+        # Sum all contacts in this subregion:
+        ins_scores[b] = np.nansum(submat)  # using nansum in case of any NaN values
 
     return ins_scores
 
 
 def compute_insulation_features(cell: np.ndarray, scale: int=100) -> dict:
     """
-    Zwraca słownik z kilkoma statystykami insulation,
-    przydatnymi do klasyfikacji scHi-C w różne etapy cyklu komórkowego.
+    Returns a dictionary with several insulation statistics,
+    useful for classifying scHi-C data into different cell cycle stages.
     """
     N = cell.shape[0]
     ins_scores = np.zeros(N, dtype=float)
@@ -57,24 +57,26 @@ def compute_insulation_features(cell: np.ndarray, scale: int=100) -> dict:
             ins_scores[b] = 0.0
             continue
 
+        # Extract the submatrix between the left region [left_start : left_end]
+        # and the right region [right_start : right_end].
         submat = cell[left_start:left_end+1, right_start:right_end+1]
         ins_scores[b] = np.nansum(submat)
 
-    # Teraz mamy wektor ins_scores
+    # We now have the ins_scores vector
     avg = np.mean(ins_scores)
     med = np.median(ins_scores)
     std = np.std(ins_scores)
-    
-    # np.percentile: dobry do zbadania "minima" czy "maksima"
+
+    # np.percentile is good for assessing minima or maxima
     p10 = np.percentile(ins_scores, 10)
     p90 = np.percentile(ins_scores, 90)
 
-    # Zwracamy zbiór interesujących liczb
+    # Return a set of interesting statistics
     return {
         "mean_ins": float(avg),
         "median_ins": float(med),
         "std_ins": float(std),
         "p10_ins": float(p10),
-        "p90_ins": p90,
-        "vector": ins_scores  # można tez zachować cały wektor
+        "p90_ins": float(p90),
+        "vector": ins_scores
     }

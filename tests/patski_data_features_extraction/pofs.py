@@ -1,6 +1,6 @@
 import pandas as pd
 from package.eXtract.process import process
-from package.eXtract.ins import compute_insulation_features
+from package.eXtract.pofs import compute_contact_scaling_exponent
 
 columns = [
     "chromosome_1",  # First chromosome
@@ -26,4 +26,4 @@ path = "C:/Users/zareb/OneDrive/Desktop/Studies/Inżynierka/CIRCLET/CIRCLET_code
 cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
 cell_matrix = process(cell_df, cell_id='SCG0088_TTGTGTGCACGGTACT-1', chromosome_lengths=chromosome_lengths, bin_size=1_000_000)
 
-print(compute_insulation_features(cell=cell_matrix))
+print(compute_contact_scaling_exponent(contact_matrix=cell_matrix))
