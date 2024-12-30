@@ -10,7 +10,14 @@ from .eXtract.primary import compute_basic_metrics
 from .eXtract.mcm import compute_mcm
 from .eXtract.extract import eXtract
 
+from .model.selection import load_cells_names, load_data, remove_diag_plus, normalize_hic, filter_poor_cells, random_model, sample_series
+from .model.preparation import get_enriched_series_data, get_series_data, get_supp_contacts, enrich_hic, matrix_scalling, bins_scalling, generate_iterations_data
+from .model.simulation import generate_new_particles, generate_initial_positions, frame_initiation, run_sim
+from .model.review import visualize_sim, inspect_gsd
+
+
 __all__ = ["process", "visualize", "imputation", "compute_cdd", 
            "compute_insulation_features", "calculate_cis_ab_comp", "calculate_cis_tads",
            "compute_tad_features", "compute_contact_scaling_exponent",
-           "compute_basic_metrics", "compute_mcm", "eXtract"]
+           "compute_basic_metrics", "compute_mcm", "eXtract", 
+           'load_cells_names', 'load_data', 'remove_diag_plus', 'normalize_hic', 'filter_poor_cells', 'random_model', 'sample_series', 'get_enriched_series_data', 'get_series_data', 'get_supp_contacts', 'enrich_hic', 'matrix_scalling', 'bins_scalling', 'generate_iterations_data', 'generate_new_particles', 'generate_initial_positions', 'frame_initiation', 'run_sim', 'visualize_sim', 'inspect_gsd']
