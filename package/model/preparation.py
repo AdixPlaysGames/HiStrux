@@ -1,9 +1,39 @@
-import preparation as prep
+import selection as selec
 from sklearn.neighbors import KDTree
 import numpy as np
+import pandas as pd
 from scipy import ndimage as ndi
 
-def get_enriched_series_data(series_names, series_predictions, population_names, population_dir, chroms_list, debug=False):
+def get_enriched_series_data(series_names: list[str], 
+                             series_predictions: list[np.ndarray], 
+                             population_names: list[str], 
+                             population_dir: str, 
+                             chroms_list: list[str], 
+                             debug=False) -> tuple[list[np.ndarray], list[pd.Series]]:
+    """
+    Based on interphase prediction establishes cells neighbourhood and copies part of scHiC contacts from nearby cells to reduce contacts matrix sparsity.
+
+    Parameters
+    ----------
+    series_names : list[str]
+        List of names of cells in a series
+    series_predictions : list[np.ndarray]
+        List of arrays holding interphase prediction for each cell from series
+    population_names : list[str]
+        List of cells names from whole population
+    population_dir : str
+        Directory of scool file holding data for whole population.
+    chroms_list : list[str]
+        List of chroms names to be considered.
+
+    Returns
+    -------
+    tuple of (list of numpy ndarray, pandas series)
+        Touple holding two list with elements for each cell of the series. One with n-dim numpy arrays containing scHiC contact matrices and one with pandas series describing scHiC matrix bins.
+
+    Examples
+    --------
+    """
     hics = []
     bins = []
     tree = KDTree(series_predictions)
@@ -26,21 +56,68 @@ def get_enriched_series_data(series_names, series_predictions, population_names,
         
     return hics, bins
 
-def get_series_data(series_names, population_dir, chroms_list, debug=False):
+def get_series_data(series_names: list[str], 
+                    population_dir: str, 
+                    chroms_list: list[str]) -> tuple[list[np.ndarray], list[pd.Series]]:
+    """
+    Extracts scHiC contacts matrix and it's bins description for each cell in series.
+
+    Parameters
+    ----------
+    series_names : list[str]
+        List of names of cells in a series
+    population_dir : str
+        Directory of scool file holding data for whole population.
+    chroms_list : list[str]
+        List of chroms names to be considered.
+
+    Returns
+    -------
+    tuple of (list of numpy ndarray, pandas series)
+        Touple holding two list with elements for each cell of the series. One with n-dim numpy arrays containing scHiC contact matrices and one with pandas series describing scHiC matrix bins.
+
+    Examples
+    --------
+    """
     hics = []
     bins = []
     
     series_num = len(series_names)
     for i in range(series_num):
         cell_name = series_names[i]
-        hic, bin = prep.load_data(population_dir+'::'+cell_name, chroms_list)      
+        hic, bin = selec.load_data(population_dir+'::'+cell_name, chroms_list)      
         hics.append(hic)
         bins.append(bin)
 
     return hics, bins
 
-def get_supp_contacts(supp_cell, contacts_num, chroms, population_dir, debug=False):
-    supp_hic, bins_neighbour = prep.load_data(population_dir+'::'+supp_cell, chroms)
+def get_supp_contacts(supp_cell: str,
+                      contacts_num: int,
+                      chroms: list[str],
+                      population_dir: str) -> np.ndarray:
+    """
+    Extracts desired number of contacts from cell randomly.
+
+    Parameters
+    ----------
+    supp_cell : str
+        Name of a choosen cell.
+    contacts_num : int
+        Number of contact to be extracted.
+    chroms : list[str]
+        List of chromosome names to be considered.
+    population_dir : str
+        Directory of scool file holding data for the cell.
+
+    Returns
+    -------
+    numpy ndarray
+        N-dim numpy array containing scHiC contact matrix.
+
+    Examples
+    --------
+    """
+    supp_hic, bins_neighbour = selec.load_data(population_dir+'::'+supp_cell, chroms)
     flat = supp_hic.flatten()
     shape = supp_hic.shape
     prob = flat / np.sum(flat)
@@ -56,8 +133,34 @@ def get_supp_contacts(supp_cell, contacts_num, chroms, population_dir, debug=Fal
 
     return matrix
 
-def enrich_hic(ref_cell, supports, chroms, population_dir, debug=False):
-    ref_hic, bins_ref = prep.load_data(population_dir+'::'+ref_cell, chroms)
+def enrich_hic(ref_cell: str,
+               supports: list[str],
+               chroms: list[str],
+               population_dir: str,
+               debug=False) -> tuple[np.ndarray, pd.Series]:
+    """
+    Performs extraction of contacts from list of cells and adds those to the contacts matrix of choosen cell returning enriched cell contacts data in form of contacts matrix and series describing its bins. 
+
+    Parameters
+    ----------
+    ref_cell : str
+        Name of a choosen cell.
+    supports : list[str]
+        List of cells names from which contacts will be extracted
+    chroms : list[str]
+        List of chromosome names to be considered.
+    population_dir : str
+        Directory of scool file holding data for the cell.
+
+    Returns
+    -------
+    tuple of (numpy.ndarray, pandas.Series)
+        Touple of n-dim numpy array with scHiC contact matrix and pandas series of bins describing contacts chromosome, start and end of chromatine fragment.
+
+    Examples
+    --------
+    """
+    ref_hic, bins_ref = selec.load_data(population_dir+'::'+ref_cell, chroms)
     shape = ref_hic.shape
     new_hic = np.zeros(shape, dtype=float)
     new_contacts = np.zeros(shape, dtype=float)
@@ -82,14 +185,52 @@ def enrich_hic(ref_cell, supports, chroms, population_dir, debug=False):
 
     return new_hic, bins_ref
 
-def matrix_scalling(matrix, scale_ratio):
+def matrix_scalling(matrix: np.ndarray,
+                    scale_ratio: int) -> np.ndarray:
+    """
+    Scales down contacts matrix resolution by a given factor. Uses uniform filter and iterpolation of order 3.
+
+    Parameters
+    matrix : np.ndarray
+        Numpy ndarray holding matrix of cells scHiC contacts.
+    scale_ratio : int
+        Scaling ratio defining factor of resolution lowering.
+    
+    Returns
+    -------
+    np.ndarray
+        New scaled down contacts matrix.
+    
+    Examples
+    --------
+    """
     order_of_interpolation = 3
     matrix_averaged = ndi.uniform_filter(input=matrix, size=scale_ratio)
     matrix_interpolated = ndi.zoom(input=matrix_averaged, zoom=1./scale_ratio, order=order_of_interpolation)
 
     return matrix_interpolated
 
-def bins_scalling(bins, desired_num_bins, debug=False):
+def bins_scalling(bins: pd.series,
+                  desired_num_bins: int,
+                  debug=False) -> pd.series:
+    """
+    Scales down bins description of contacts matrix to the choosen number of bins. Pics new bins begging and end as begging and end of bins merged and chromosome as mode of chromosomes of bins merged.
+
+    Parameters
+    ----------
+    bins : pd.series
+        Original series with bins description
+    desired_num_bins : int
+        Number of bins at the end of scalling.
+    
+    Returns
+    -------
+    pd.series
+        New series containg merged bins in a desired number.
+    
+    Examples
+    --------
+    """
     # Calculate the scale ratio
     scale_ratio = len(bins) / desired_num_bins
     
@@ -116,7 +257,29 @@ def bins_scalling(bins, desired_num_bins, debug=False):
     
     return bins_scaled
 
-def generate_iterations_data(hics, bins, n):
+def generate_iterations_data(hics: np.ndarray,
+                             bins: pd.series,
+                             n: int,) -> tuple[list[np.ndarray], list[pd.series]]:
+    """
+    Generates cell's scaled down contacts matrices and scaled down bins descriptions for them in a desired number.
+
+    Parameters
+    ----------
+    hics : list[np.ndarray]
+        List of n-dim numpy arrays containing contact matrices for cells in series.
+    bins : list[pd.series]
+        List of pandas serieses containing descriptions of bins for contact matrices for cells in series.
+    n : int
+        Number of iterations to be prepared.
+    
+    Returns
+    -------
+    tuple[list[np.ndarray], list[pd.series]]
+        Touple with two lists holding scaled down cells contacts data. One with n-dim numpy arrays containing scaled down contact matrices and the second with scaled down bins descriptions. 
+    
+    Examples
+    --------
+    """
     hics_scales = []
     bins_scales = []
     
@@ -129,9 +292,9 @@ def generate_iterations_data(hics, bins, n):
 
         for i in range(n-1):
             hic_scaled = matrix_scalling(hic, 5*(i+1))
-            prep.normalize_hic(hic_scaled)
-            prep.remove_diag_plus(hic_scaled)
-            prep.normalize_hic(hic_scaled)
+            selec.normalize_hic(hic_scaled)
+            selec.remove_diag_plus(hic_scaled)
+            selec.normalize_hic(hic_scaled)
             hic_scales.append(hic_scaled)
             
             # print('required bins num: ', hic_scaled.shape[0])

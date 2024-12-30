@@ -7,9 +7,10 @@ import h5py
 
 # data selection definitions
 
-def load_cells_names(population_dir: str, num: int) -> list[str]:
+def load_cells_names(population_dir: str, 
+                     num: int) -> list[str]:
     """
-    Reads first n names of cells from scool file
+    Reads first n names of cells from scool file.
 
     Parameters
     ----------
@@ -42,7 +43,9 @@ def load_cells_names(population_dir: str, num: int) -> list[str]:
 
         return cells
 
-def load_data(cell_dir: str, chroms_list: list[str], normalization_percentile: Optional[int] = 90) -> tuple[np.ndarray, pd.Series]:
+def load_data(cell_dir: str, 
+              chroms_list: list[str], 
+              normalization_percentile: Optional[int] = 90) -> tuple[np.ndarray, pd.Series]:
     """
     Loads a contacts matrix and a bins series of specified cell from .scool file
 
@@ -162,7 +165,12 @@ def normalize_hic(hic: np.ndarray, p: int) -> None:
     thersh = np.percentile(flat, p)
     hic[hic < thersh] = 0
 
-def filter_poor_cells(population_dir: str, cells_names: list[str], chroms_list: list[str], min_contacts: Optional[int] = 4000, min_ratio: Optional[int] = 0.15, max_ratio: Optional[int] = 0.4, main_width: Optional[int] = 50) -> np.array:
+def filter_poor_cells(population_dir: str, 
+                      cells_names: list[str], 
+                      chroms_list: list[str], 
+                      min_contacts: Optional[int] = 4000, 
+                      min_ratio: Optional[int] = 0.15, 
+                      max_ratio: Optional[int] = 0.4, main_width: Optional[int] = 50) -> np.array:
     """
     Filters provided list of cells names with respect to contacts matricies quality. 
 
@@ -222,7 +230,11 @@ def random_model(cells, phase_num):
 
     return labels, predictions
 
-def sample_series(cells_names: list[str], labels: list[int], predictions: list[np.ndarray], series_size: int, debug=False) -> tuple[np.array, np.array, np.array]:
+def sample_series(cells_names: list[str], 
+                  labels: list[int], 
+                  predictions: list[np.ndarray], 
+                  series_size: int, 
+                  debug=False) -> tuple[np.array, np.array, np.array]:
     """
     Samples desired number of cells from provided cells population. Keep input ratios of labels.
     
