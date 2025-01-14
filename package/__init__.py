@@ -10,10 +10,10 @@ from .eXtract.primary import compute_basic_metrics
 from .eXtract.mcm import compute_mcm
 from .eXtract.extract import eXtract
 
-from .simulation.selection import load_cells_names, load_data, remove_diag_plus, normalize_hic, filter_poor_cells, random_model, sample_series
-from .simulation.preparation import get_enriched_series_data, get_series_data, get_supp_contacts, enrich_hic, matrix_scalling, bins_scalling, generate_iterations_data
-from .simulation.simulation import generate_new_particles, generate_initial_positions, frame_initiation, run_sim
-from .simulation.review import visualize_sim, inspect_gsd
+from .recontruct.selection import load_cells_names, load_data, remove_diag_plus, normalize_hic, filter_poor_cells, random_model, sample_series
+from .recontruct.preparation import get_enriched_series_data, get_series_data, get_supp_contacts, enrich_hic, matrix_scalling, bins_scalling, generate_iterations_data
+from .recontruct.simulation import generate_new_particles, generate_initial_positions, frame_initiation, run_sim
+from .recontruct.review import visualize_sim, inspect_gsd
 
 
 __all__ = ["process", "visualize", "imputation", "compute_cdd", 
