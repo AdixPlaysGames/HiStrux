@@ -1,5 +1,7 @@
 import pandas as pd
 from package.eXtract.extract import eXtract
+import tkinter as tk
+from pandastable import Table, TableModel, config # type: ignore
 
 columns = [
     "chromosome_1",  # First chromosome
@@ -25,4 +27,5 @@ path = "C:/Users/zareb/OneDrive/Desktop/Studies/Inżynierka/CIRCLET/CIRCLET_code
 cell_id = 'SCG0088_TTGTGTGCACGGTACT-1'
 
 cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
-print(eXtract(cell_df=cell_df, cell_id=None))
+extracted = eXtract(cell_df=cell_df, cell_id=cell_id, imputation_involved=True, vectorize=False, bin_size=500_000)
+print(extracted)

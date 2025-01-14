@@ -2,16 +2,16 @@ import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA  # type: ignore
 from .imputation import imputation
-import matplotlib.pyplot as plt
 from .visualization import visualize
+
+# Sprawdzić imputację i parametry luźniejsze
 
 def compute_ab_compartments(
     contacts_df: pd.DataFrame,
     bin_size: int = 1_000_000, 
-    w: int = 11, 
+    w: int = 4, 
     p: float = 0.85, 
-    threshold_percentile: int = 90,
-    imputation_involved: bool = False,
+    imputation_involved: bool = True,
     plot: bool = False
 ) -> pd.DataFrame:
     """
@@ -113,7 +113,7 @@ def compute_ab_compartments(
                 contact_matrix, 
                 w=w, 
                 p=p, 
-                threshold_percentile=threshold_percentile
+                #threshold_percentile=threshold_percentile
             )
         
         # If there is need to visualize process -> plot process
@@ -237,9 +237,8 @@ def compute_ab_stats(result_df: pd.DataFrame,
 def calculate_cis_ab_comp(
     contacts_df: pd.DataFrame,
     bin_size: int = 1_000_000,
-    w: int = 5,
+    w: int = 4,
     p: float = 0.85,
-    threshold_percentile: int = 90,
     imputation_involved=False,
     plot: bool = False
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -278,7 +277,6 @@ def calculate_cis_ab_comp(
         bin_size=bin_size,
         w=w,
         p=p,
-        threshold_percentile=threshold_percentile,
         imputation_involved=imputation_involved,
         plot=plot
     )

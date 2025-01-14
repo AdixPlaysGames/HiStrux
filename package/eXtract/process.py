@@ -61,14 +61,14 @@ def process(
     # Create a copy of the relevant data for the specified cell
     cell = cells[cells['cell_id'] == cell_id].copy()
 
-    # Filter for intra-chromosomal interactions if trans_interactions is False
-    if trans_interactions is False:
-        cell = cell[cell['chromosome_1'] == cell['chromosome_2']]
-
     # If substring is not None, trim the last 'substring' characters from chromosome names
     if substring is not None:
         cell['chromosome_1'] = cell['chromosome_1'].str[:-substring]
         cell['chromosome_2'] = cell['chromosome_2'].str[:-substring]
+
+    # Filter for intra-chromosomal interactions if trans_interactions is False
+    if trans_interactions is False:
+        cell = cell[cell['chromosome_1'] == cell['chromosome_2']]
 
     # Assign default mouse chromosome lengths if none are provided
     if chromosome_lengths is None:

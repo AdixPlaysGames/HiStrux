@@ -22,23 +22,21 @@ cell_df = cell_df[cell_df['cell_id'] == 'SCG0088_TTGTGTGCACGGTACT-1']
 
 print(calculate_cis_tads(
     cell_df,
-    bin_size=500_000,
-    w=10,
-    p=0.90,
-    threshold_percentile=85,
+    bin_size=300_000,
+    w=5,
+    p=0.85,
     imputation_involved=True,
-    boundary_threshold=0.19,
+    boundary_threshold=0.05,
     show_plot=True
 ))
 
 
 print(compute_tad_features(
     cell_df,
-    bin_size=500_000,
-    w=10,
-    p=0.90,
-    threshold_percentile=85,
+    bin_size=300_000,
+    w=3,
+    p=0.85,
     imputation_involved=True,
-    boundary_threshold=0.19,
+    boundary_threshold=0.1,
     show_plot=False
 ))

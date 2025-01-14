@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from .imputation import imputation
+from scipy.stats import gmean # type: ignore
 
 def compute_directionality_index(contact_matrix, window=5):
     """
@@ -130,13 +131,16 @@ def plot_tads_for_chrom(
     """
     N = contact_matrix.shape[0]
     
+    # Define custom colormap
+    from matplotlib.colors import LinearSegmentedColormap
+    custom_blue = LinearSegmentedColormap.from_list("custom_blue", ['#f7f7f7', '#016959'])
+
     fig, ax = plt.subplots(figsize=(6, 5))
-    # For better visibility, apply a logarithmic transform: log1p.
-    cax = ax.imshow(np.log1p(contact_matrix), 
-                    cmap='Reds', 
-                    origin='upper',
-                    interpolation='nearest')
-    fig.colorbar(cax, ax=ax, fraction=0.046, pad=0.04)
+    # Apply a logarithmic transform: log1p, and use the custom colormap.
+    ax.imshow(np.log1p(contact_matrix), 
+              cmap=custom_blue, 
+              origin='upper', 
+              interpolation='nearest')
 
     # Draw boundary lines for each TAD boundary in both x and y directions.
     for b in boundaries:
@@ -144,13 +148,18 @@ def plot_tads_for_chrom(
             ax.axhline(y=b - 0.5, color='blue', linewidth=0.7)
             ax.axvline(x=b - 0.5, color='blue', linewidth=0.7)
 
-    ax.set_title(f"Chrom: {chrom} - TAD boundaries")
-    ax.set_xlabel("bin index")
-    ax.set_ylabel("bin index")
+    # Set title with increased font size
+    ax.set_title(f"Chrom: {chrom} - TAD boundaries", fontsize=14)
+    
+    # Set axis labels with increased font size and hide ticks
+    ax.set_xlabel("Genome position 1", fontsize=12)
+    ax.set_ylabel("Genome position 2", fontsize=12)
+    ax.set_xticks([])
+    ax.set_yticks([])
 
     # Optionally save the figure.
     if out_prefix is not None:
-        plt.savefig(f"{out_prefix}_{chrom}_tads.png", dpi=150, bbox_inches='tight')
+        plt.savefig(f"{out_prefix}_{chrom}_tads.png", dpi=180, bbox_inches='tight')
 
     # Show the plot or close it, based on the show_plot parameter.
     if show_plot:
@@ -158,12 +167,13 @@ def plot_tads_for_chrom(
     else:
         plt.close(fig)
 
+
+
 def calculate_cis_tads(
     contacts_df: pd.DataFrame,
     bin_size: int = 1_000_000,
     w: int = 5,
     p: float = 0.85,
-    threshold_percentile: int = 90,
     imputation_involved: bool = False,
     boundary_threshold: float = 0.8,
     out_prefix: str = None,
@@ -249,8 +259,7 @@ def calculate_cis_tads(
             contact_matrix = imputation(
                 contact_matrix,
                 w=w,
-                p=p,
-                threshold_percentile=threshold_percentile
+                p=p
             )
 
         # Calculate directionality index and detect TAD boundaries
@@ -350,7 +359,6 @@ def compute_tad_features(
     bin_size: int = 1_000_000,
     w: int = 10,
     p: float = 0.85,
-    threshold_percentile: int = 91,
     imputation_involved: bool = False,
     boundary_threshold: float = 0.3,
     out_prefix: str = None,
@@ -392,7 +400,6 @@ def compute_tad_features(
         bin_size=bin_size,
         w=w,
         p=p,
-        threshold_percentile=threshold_percentile,
         imputation_involved=imputation_involved,
         boundary_threshold=boundary_threshold,
         out_prefix=out_prefix,
@@ -408,12 +415,14 @@ def compute_tad_features(
     features_df = compute_cell_features(tad_stats, tad_boundaries)
 
     # Extract summary values
-    n_tads_mean = features_df['n_tads'].mean()
-    mean_bin_size = features_df['mean_size_in_bins'].mean()
-    tad_density_mean = features_df['tad_density'].mean()
+    n_tads_mean = gmean(features_df['n_tads'])
+    mean_bin_size = gmean(features_df['mean_size_in_bins'])
+    tad_density_mean = gmean(features_df['tad_density'])
 
     return {
-        "n_tads_mean": n_tads_mean,
-        "mean_bin_size": mean_bin_size,
+        "tad_n_tads_mean": n_tads_mean,
+        "tad_mean_bin_size": mean_bin_size,
         "tad_density_mean": tad_density_mean
     }
+
+# spróbować stosunek kwadrat do trójkąta z ins

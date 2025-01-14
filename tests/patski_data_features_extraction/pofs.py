@@ -24,6 +24,6 @@ chromosome_lengths = [('chr1', 195471971), ('chr2', 182113224), ('chr3', 1600396
 
 path = "C:/Users/zareb/OneDrive/Desktop/Studies/Inżynierka/CIRCLET/CIRCLET_code/CIRCLET/patski.S_5.two.bedpe"
 cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
-cell_matrix = process(cell_df, cell_id='SCG0088_TTGTGTGCACGGTACT-1', chromosome_lengths=chromosome_lengths, bin_size=1_000_000)
+cell_matrix = process(cell_df, cell_id='SCG0093_GCTTGACCATGCATAT-1', chromosome_lengths=chromosome_lengths, bin_size=1_000_000)
 
-print(compute_contact_scaling_exponent(contact_matrix=cell_matrix))
+print(compute_contact_scaling_exponent(contact_matrix=cell_matrix, plot=True, num_log_bins=40, max_distance=100))

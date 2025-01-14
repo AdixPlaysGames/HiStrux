@@ -20,5 +20,5 @@ columns = [
 path = "C:/Users/zareb/OneDrive/Desktop/Studies/Inżynierka/CIRCLET/CIRCLET_code/CIRCLET/patski.S_5.two.bedpe"
 cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
 
-cell_matrix = process(cell_df, cell_id='SCG0088_TTGTGTGCACGGTACT-1')
+cell_matrix = process(cell_df, cell_id='SCG0089_TCATGCCTCCCGTTAC-1', bin_size=500_000)
 print(compute_mcm(cell_matrix))

@@ -1,25 +1,24 @@
 import numpy as np
 import pandas as pd
 import cooler
-from typing import Optional
+from typing import Optional, Union
 import random
 import h5py
 
 # data selection definitions
-
 def load_cells_names(population_dir: str, 
-                     cells_num: Optional[int] = None,
-                     cells_names: Optional[list[int]] = None) -> list[str]:
+                     cells_num: Optional[int] = 10,
+                     cells_names: Optional[list[str]] = None) -> list[str]:
     """
-    Reads required number of cell names from scool file taking first cells. If user knows the names of cells he want to work with this function can be used as a check whether those cells are actually in the file.
+    Reads required number of cell names from scool file taking first cells. If user knows the names of cells he want to work with this, function can be used as a check whether those cells are actually in the file.
 
     Parameters
     ----------
     population_dir : str
         Scool file directory.
-    num : ptional[int] = None
+    num : optional[int] = 10
         Number of cell's names to be read.
-    cells_names : Optional[list[int]] = None
+    cells_names : Optional[list[str]] = None
         Name of cell's names to be checked if present.
 
     Returns
@@ -42,8 +41,8 @@ def load_cells_names(population_dir: str,
         return str(e)
 
     with h5py.File(population_dir, 'r') as f:
-        print('Plik otwarty pomyślnie')
-        print('Atrybuty scool:')
+        print('File successfully opened')
+        print('Scool attributes:')
         for attr in f.attrs:
             print(attr, ': ', f.attrs[attr])
 
@@ -60,19 +59,18 @@ def load_cells_names(population_dir: str,
         return cells
 
 def load_data(cell_dir: str, 
-              chroms_list: list[str], 
+              chroms_list: Optional[list[str]] = None, 
               do_not_clean: Optional[bool] = False,
-              normalization_percentile: Optional[int] = 90
-              ) -> tuple[np.ndarray, pd.Series]:
+              normalization_percentile: Optional[int] = 90) -> tuple[np.ndarray, pd.Series]:
     """
-    Extracts scHiC contact matrix and bins series describing this matrix. Data is loaded from cool file data source. If user works with composed population data within scool file the cell selection need to follow format: scool_file_directory/scool_file_name :: cell_name. It picks only specified chromosomes. Functions remove_diag_plus and normalize_hic are included in it by default, but can be turned of with a parameter.
+    Extracts scHiC contact matrix and bins series describing this matrix. Data is loaded from cool file data source. If user works with composed population data within scool file the cell selection need to follow format: scool_file_directory/scool_file_name::cell_name. It picks only specified chromosomes. Functions remove_diag_plus and normalize_hic are included in it by default, but can be turned of with a parameter.
     
     Parameters
     ----------
     cell_dir : str
         Scool file directory with cell name.
     chroms_list : list of str
-        List of chromosome names to loaded.
+        List of chromosome names to loaded. Loads all if not specified.
     do_not_clean :  Optional[bool] = False
         True/False value controling whether normalization and main diagonal removal takes place.
     normalization_percentile : Optional[int] = 90
@@ -80,8 +78,10 @@ def load_data(cell_dir: str,
 
     Returns
     -------
-    tuple of (numpy.ndarray, pandas.Series)
-        Touple of n-dim numpy array with scHiC contact matrix and pandas series of bins describing contacts chromosome, start and end of chromatine fragment.
+    numpy.ndarray
+        n-dim numpy ndarray with scHiC contact matrix
+    pandas.Series
+        pandas series of bins describing contacts chromosome, start and end of chromatine fragment
 
     Examples
     --------
@@ -109,23 +109,37 @@ def load_data(cell_dir: str,
     #load global cell selectors
     cell = cooler.Cooler(cell_dir)
     cell_contacts = cell.matrix(balance=False)
+    cell_bins = cell.bins()
 
-    #set chroms range
-    fetch_end = 0
-    for chrom in chroms_list:
-        fetch_end += cell_contacts.fetch(chrom).shape[0]
-    
-    #fetch desired part of HiC matrix
-    hic = cell_contacts[0:fetch_end, 0:fetch_end]
-    if do_not_clean is False:
-        remove_diag_plus(hic)
-        normalize_hic(hic, normalization_percentile)
-    bins_hic = cell.bins()[:]
-    bins_hic = bins_hic[bins_hic['chrom'].isin(chroms_list)]
+    if chroms_list == None:
+        hic = cell_contacts[:]
+        bin = cell_bins[:]
+    else:
+        chroms_num = len(chroms_list)
+        hic_subsets_horizontal = [None] * chroms_num
+        hic_subsets_vertical = [None] * chroms_num
 
-    return hic, bins_hic
+        for row in range(chroms_num):
+            chr_vertical = chroms_list[row]
+            if row == 0:
+                bin = cell_bins.fetch(chr_vertical)
+            else:
+                next_bin = cell_bins.fetch(chr_vertical)
+                bin = pd.concat([bin, next_bin], ignore_index=True)
+            for column in range(chroms_num):
+                chr_horizontal = chroms_list[column]
+                hic_subset = cell_contacts.fetch(chr_vertical, chr_horizontal)
+                hic_subsets_horizontal[column] = hic_subset
+            hic_subsets_vertical[row] = np.hstack(hic_subsets_horizontal)
+        hic = np.vstack(hic_subsets_vertical)
 
-def remove_diag_plus(matrix: np.ndarray) -> None:
+    if do_not_clean == False:
+        hic = remove_diag_plus(hic)
+        hic = normalize_hic(hic, normalization_percentile)
+
+    return hic, bin
+
+def remove_diag_plus(matrix: np.ndarray) -> np.ndarray:
     """
     Sets main diagonal of matrix, and together with diagonals one above and below it to zero. This function is used as part of preprocessing to remove bins contacts on diagonal and those of neighboring bins which are not useful in chromatin reconstruction. It is used by default in load_data function.
     
@@ -136,8 +150,8 @@ def remove_diag_plus(matrix: np.ndarray) -> None:
 
     Returns
     -------
-    None
-        This function modifies provided array in place.
+    np.ndarray
+        Returns modified matrix.
 
     Examples
     --------
@@ -150,24 +164,30 @@ def remove_diag_plus(matrix: np.ndarray) -> None:
            [9, 0, 0, 0],
            [13, 14, 0, 0]])
     """
-    for i in range(matrix.shape[0]):
-        for j in range(matrix.shape[1]):
-            if i == j or i-1 == j or i+1 == j:
-                matrix[i][j] = 0
+    matrix_no_diag = matrix
 
-def normalize_hic(hic: np.ndarray, p: int) -> None:
+    for i in range(matrix_no_diag.shape[0]):
+        for j in range(matrix_no_diag.shape[1]):
+            if i == j or i-1 == j or i+1 == j:
+                matrix_no_diag[i][j] = 0
+
+    return matrix_no_diag
+
+def normalize_hic(hic: np.ndarray, p: int) -> np.ndarray:
     """
     Applies natural logarithm over matrix values and sets p-th percentile of lowest values to 0. This function is part of data preprocessing and is used by default in load_data function.
     
     Parameters
     ----------
     hic : np.ndarray
-        Numpy square ndarray. 
-
+        Numpy square ndarray.
+    p : 
+        percentile controling which cells of matrix will be set to 0
+        
     Returns
     -------
-    None
-        This function modifies provided array in place.
+    np.ndarray
+        Returns modified matrix.
 
     Examples
     --------
@@ -180,10 +200,12 @@ def normalize_hic(hic: np.ndarray, p: int) -> None:
            [0, 0, 0, 0],
            [13, 14, 0, 0]])
     """
-    flat = hic.flatten()
+    hic_normalized = np.log(hic + 1)
+    flat = hic_normalized.flatten()
     thersh = np.percentile(flat, p)
-    hic[hic < thersh] = 0
-    hic = np.log(hic + 1)
+    hic_normalized[hic_normalized < thersh] = 0
+    
+    return hic_normalized
 
 def filter_poor_cells(population_dir: str, 
                       cells_names: list[str], 
@@ -191,9 +213,10 @@ def filter_poor_cells(population_dir: str,
                       min_contacts: Optional[int] = 4000, 
                       min_ratio: Optional[int] = 0.15, 
                       max_ratio: Optional[int] = 0.4, 
-                      main_width: Optional[int] = 50) -> np.array:
+                      main_width: Optional[int] = 50,
+                      normalization_percentile: Optional[int] = 90) -> np.array:
     """
-    This function filters list of cells names and returns only cells which contact matrices have required minimal number of contacts as well as minimal and maximal ratio of long range contacts. Where long range contacts are defined as one's located beyond main\_width central diagonals of matrix.  
+    This function filters list of cells names and returns only cells which contact matrices have required minimal number of contacts as well as minimal and maximal ratio of long range contacts. Where long range contacts are defined as one's located beyond main_width distance of the central diagonal of matrix.  
     
     Parameters
     ----------
@@ -210,7 +233,9 @@ def filter_poor_cells(population_dir: str,
     max_ratio: Optional[int] = 0.4
         Requires ratio of long range contacts to be lower than that.
     main_width: Optional[int] = 50
-        Defines long range contacts. If contacts is located on diagonal further than 50 diagonals up or down main diagonal of matrix it is constidered long range.
+        Defines long range contacts. If contact is located on diagonal further than 50 diagonals up or down main diagonal of matrix it is constidered long range.
+    normalization_percentile: Optional[int] = 90
+        Optional parameter to control load_data function behaviour
 
     Returns
     -------
@@ -225,7 +250,7 @@ def filter_poor_cells(population_dir: str,
     filtered_cells = [] 
 
     for cell_name in cells_names:
-        hic, bins = load_data(population_dir+'::'+cell_name, chroms_list)
+        hic, bins = load_data(population_dir+'::'+cell_name, chroms_list, normalization_percentile=normalization_percentile)
         contacts_num = np.count_nonzero(hic)
         if contacts_num < min_contacts:
             continue
@@ -238,6 +263,8 @@ def filter_poor_cells(population_dir: str,
             continue
         filtered_cells.append(cell_name)
 
+    if len(filtered_cells) == 0:
+        print("Warning: no cell fulfils quality requirements")
     return np.array(filtered_cells)
 
 def random_model(cells, phase_num):
@@ -253,7 +280,7 @@ def sample_series(cells_names: list[str],
                   labels: list[int], 
                   predictions: list[np.ndarray], 
                   series_size: int, 
-                  debug=False) -> tuple[np.array, np.array, np.array]:
+                  debug: Optional[bool] = False) -> tuple[np.array, np.array, np.array]:
     """
     Samples desired number of cells from provided cells population. Keep input ratios of labels. Function returns three arrays with sampled cells names, labels and prediction values, all crucial for further steps.
     
@@ -267,6 +294,8 @@ def sample_series(cells_names: list[str],
         List of numpy ndarrays describing prediction.
     series_size: int
         Number of cells to be sampled.
+    debug: bool
+        Prints control info during execution. 
 
     Returns
     -------
@@ -314,20 +343,21 @@ def sample_series(cells_names: list[str],
             [0.31415687, 0.17877836, 0.50706477],
             [0.15329386, 0.26029309, 0.58641306]]))
     """
+    
     labels_types, labels_counts = np.unique(labels, return_counts=True)
+    labels_ratio = labels_counts / len(cells_names)
     if debug:	
         print('labels_types', labels_types)
         print('labels_counts', labels_counts)
-
-    sample_ratio = series_size / len(cells_names)
-    labels_ratio = labels_counts * sample_ratio
-    if debug:	
         print('labels_ratio', labels_ratio)
 
-    new_labels_counts = (np.floor(labels_ratio)).astype(int)
+    new_labels_counts = (np.floor(labels_ratio * series_size)).astype(int)
     rand_num = series_size - np.sum(new_labels_counts)
+    if debug:	
+        print('new_labels_counts', new_labels_counts)
+        print('rand_num', rand_num)
 
-    labels_chance = np.cumsum(labels_ratio - new_labels_counts)
+    labels_chance = np.cumsum(labels_ratio)
     labels_chance /= np.max(labels_chance)
     if debug:
         print('labels_chance', labels_chance)
@@ -335,8 +365,9 @@ def sample_series(cells_names: list[str],
     for i in range(rand_num):
         choice = np.searchsorted(labels_chance, np.random.random(1))
         new_labels_counts[choice] += 1
-
-    # print('new_labels_counts', new_labels_counts)
+    
+    if debug:	
+        print('new_labels_counts', new_labels_counts)
 
     series_cells = []
     series_labels = []
