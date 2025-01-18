@@ -73,13 +73,18 @@ def compute_mcm(hic_matrix: np.ndarray,
         far_ratio = far_contacts / total_contacts if total_contacts > 0 else 0.0
 
         return {
-            'near_ratio': near_ratio,
-            'mid_ratio': mid_ratio,
-            'far_ratio': far_ratio
+            'mcm_near_ratio': near_ratio,
+            'mcm_mid_ratio': mid_ratio,
+            'mcm_far_ratio': far_ratio
         }
 
     # Compute the distance class ratios
     mcm_dict = compute_distance_classes(hic_matrix, bin_size=bin_size,
                                           near_threshold=near_threshold,
                                           mid_threshold=mid_threshold)
+
+    # This function is created based on CIRCLET tool. Basic data that contains
+    # basic values such as chromosome id, cell id, contact length and mapping quality
+    # doesn't support other calculations. However it can be expanded making MCM
+    # much more powerful.
     return mcm_dict

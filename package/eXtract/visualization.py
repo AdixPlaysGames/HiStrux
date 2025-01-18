@@ -4,7 +4,8 @@ from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
 def visualize(matrix: np.ndarray, title: str = 'scHi-C',
-                xlabel: str = 'Genome position 1', ylabel: str = 'Genome position 2') -> None:
+                xlabel: str = 'Genome position 1', ylabel: str = 'Genome position 2',
+                return_plot: bool=False) -> None:
     """
     Visualizes a given contact matrix using a heatmap.
 

@@ -2,16 +2,14 @@ import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA  # type: ignore
 from .imputation import imputation
-import matplotlib.pyplot as plt
 from .visualization import visualize
 
 def compute_ab_compartments(
     contacts_df: pd.DataFrame,
     bin_size: int = 1_000_000, 
-    w: int = 11, 
+    w: int = 4, 
     p: float = 0.85, 
-    threshold_percentile: int = 90,
-    imputation_involved: bool = False,
+    imputation_involved: bool = True,
     plot: bool = False
 ) -> pd.DataFrame:
     """
@@ -34,13 +32,10 @@ def compute_ab_compartments(
         The bin size in base pairs; defaults to 1,000,000 bp (1 Mb).
 
     w : int, optional
-        Parameter for the imputation function (if used). Defaults to 5.
+        Parameter for the imputation function (if used). Defaults to 4.
 
     p : float, optional
         Another parameter for the imputation function (if used). Defaults to 0.85.
-
-    threshold_percentile : int, optional
-        Threshold percentile for the imputation function. Defaults to 90.
 
     imputation_involved : bool, optional
         Whether to apply the imputation step on the contact matrix. Defaults to False.
@@ -61,20 +56,20 @@ def compute_ab_compartments(
         The rows are sorted in ascending order by chromosome and bin.
     """
 
-    # 1. Filter to keep only cis contacts (interactions within the same chromosome).
+    # Filter to keep only cis contacts (interactions within the same chromosome).
     cis_df = contacts_df[contacts_df["chromosome_1"] == contacts_df["chromosome_2"]].copy()
     if len(cis_df) == 0:
         raise ValueError("No cis-contacts found in the input DataFrame.")
 
-    # 2. Determine the range (min, max) for each chromosome to know how many bins are required.
-    #    Also assign a bin ID for 'start_1' and 'start_2'.
+    # Determine the range (min, max) for each chromosome to know how many bins are required.
+    # Also assign a bin ID for 'start_1' and 'start_2'.
     def get_bin_id(start, bin_size):
         return start // bin_size
 
     cis_df["bin_1"] = cis_df["start_1"].apply(lambda x: get_bin_id(x, bin_size))
     cis_df["bin_2"] = cis_df["start_2"].apply(lambda x: get_bin_id(x, bin_size))
 
-    # 3. Group data by chromosome for convenience.
+    # Group data by chromosome for convenience.
     chrom_list = cis_df["chromosome_1"].unique()
 
     # Prepare a list to collect results for all chromosomes.
@@ -113,22 +108,22 @@ def compute_ab_compartments(
                 contact_matrix, 
                 w=w, 
                 p=p, 
-                threshold_percentile=threshold_percentile
+                #threshold_percentile=threshold_percentile
             )
         
         # If there is need to visualize process -> plot process
         if plot is True:
           visualize(contact_matrix, title=chrom)
 
-        # 4. Convert the contact matrix into a correlation matrix (or O/E, etc.).
+        # Convert the contact matrix into a correlation matrix (or O/E, etc.).
         with np.errstate(invalid='ignore'):
             corr_matrix = np.corrcoef(contact_matrix)
 
         # Replace possible NaN values in the correlation matrix with 0.0
         corr_matrix = np.nan_to_num(corr_matrix, nan=0.0)
 
-        # 5. Perform PCA on the correlation matrix.
-        #    We treat each bin as a "sample" and its correlation values with all bins as "features."
+        # Perform PCA on the correlation matrix.
+        # We treat each bin as a "sample" and its correlation values with all bins as "features."
         pca = PCA(n_components=1)
         X = corr_matrix
         pca.fit(X)
@@ -136,7 +131,7 @@ def compute_ab_compartments(
         # PC1 scores for each bin (size N).
         pc1_coords = pca.transform(X)[:, 0]
 
-        # 6. Construct the output DataFrame for this chromosome.
+        # Construct the output DataFrame for this chromosome.
         data_out = []
         for bin_id in range(N):
             start_bp = bin_id * bin_size
@@ -237,9 +232,8 @@ def compute_ab_stats(result_df: pd.DataFrame,
 def calculate_cis_ab_comp(
     contacts_df: pd.DataFrame,
     bin_size: int = 1_000_000,
-    w: int = 5,
+    w: int = 4,
     p: float = 0.85,
-    threshold_percentile: int = 90,
     imputation_involved=False,
     plot: bool = False
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -272,18 +266,17 @@ def calculate_cis_ab_comp(
         - A/B compartment statistics DataFrame.
     """
 
-    # 1) Compute A/B compartments
+    # Compute A/B compartments
     compartments_df = compute_ab_compartments(
         contacts_df=contacts_df,
         bin_size=bin_size,
         w=w,
         p=p,
-        threshold_percentile=threshold_percentile,
         imputation_involved=imputation_involved,
         plot=plot
     )
 
-    # 2) Compute A-B statistics
+    # Compute A-B statistics
     ab_stats_df = compute_ab_stats(
         result_df=compartments_df,
         contacts_df=contacts_df,

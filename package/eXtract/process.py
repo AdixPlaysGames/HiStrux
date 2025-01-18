@@ -56,19 +56,20 @@ def process(
   
     # If no cell_id is provided, use the first one found in the DataFrame
     if cell_id is None:
+      cells = cells.reset_index(drop=True)
       cell_id = cells['cell_id'][0]
     
     # Create a copy of the relevant data for the specified cell
     cell = cells[cells['cell_id'] == cell_id].copy()
 
-    # Filter for intra-chromosomal interactions if trans_interactions is False
-    if trans_interactions is False:
-        cell = cell[cell['chromosome_1'] == cell['chromosome_2']]
-
     # If substring is not None, trim the last 'substring' characters from chromosome names
     if substring is not None:
         cell['chromosome_1'] = cell['chromosome_1'].str[:-substring]
         cell['chromosome_2'] = cell['chromosome_2'].str[:-substring]
+
+    # Filter for intra-chromosomal interactions if trans_interactions is False
+    if trans_interactions is False:
+        cell = cell[cell['chromosome_1'] == cell['chromosome_2']]
 
     # Assign default mouse chromosome lengths if none are provided
     if chromosome_lengths is None:
@@ -120,6 +121,15 @@ def process(
     num_bins = total_genome_length // bin_size
     contact_matrix = np.zeros((num_bins, num_bins), dtype=int)
 
+    # Ensure bin indices do not exceed the contact matrix dimensions as also determine and report the number of bins that were excluded
+    max_bin = num_bins - 1
+    mask = (grouped_array[:, 0].astype(int) <= max_bin) & (grouped_array[:, 1].astype(int) <= max_bin)
+    cut_bins = len(grouped_array) - np.sum(mask)
+    grouped_array = grouped_array[mask]
+
+    if cut_bins > 0:
+        print(f"Cut {cut_bins} bins that exceeded the matrix range due to provided chromosome lengths in the input. If more than one bin was cut, please check the correctness of the chromosome lengths.")
+    
     # Populate the contact matrix using the grouped results, then make it symmetric
     contact_matrix[grouped_array[:, 0].astype(int), grouped_array[:, 1].astype(int)] = grouped_array[:, 2].astype(int)
     contact_matrix += contact_matrix.T - np.diag(contact_matrix.diagonal())

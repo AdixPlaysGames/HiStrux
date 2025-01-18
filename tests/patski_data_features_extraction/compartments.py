@@ -22,14 +22,13 @@ cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
 cell_df['chromosome_1'] = cell_df['chromosome_1'].str[:-2]
 cell_df['chromosome_2'] = cell_df['chromosome_2'].str[:-2]
 
-cell_df = cell_df[cell_df['cell_id'] == 'SCG0088_TTGTGTGCACGGTACT-1']
+cell_df = cell_df[cell_df['cell_id'] == 'SCG0089_TCATGCCTCCCGTTAC-1']
 
 print(calculate_cis_ab_comp(
     cell_df,
-    bin_size = 1_000_000,
-    w  = 11,
+    bin_size = 300_000,
+    w  = 4,
     p = 0.85,
-    threshold_percentile= 91,
     imputation_involved=True,
-    plot = True
+    plot = False
 ))
