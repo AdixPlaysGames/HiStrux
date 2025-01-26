@@ -43,7 +43,7 @@ By focusing on both accurate feature extraction and more informed simulation run
 </div>
 
 ## Modules
-<img src="./addit_files/logo/extract.png" alt="Extract Logo" style="width: 25%; float: left; margin-right: 10px;" />
+<img src="./addit_files/logo/extract.png" alt="Extract Logo" style="width: 100%; float: left; margin-right: 10px;" />
 <p style="text-align: justify;">
 </p>
 
@@ -62,7 +62,7 @@ By focusing on both accurate feature extraction and more informed simulation run
 
 ---
 
-<img src="./addit_files/logo/reconstruct.png" alt="Extract Logo" style="width: 25%; float: left; margin-right: 10px;" />
+<img src="./addit_files/logo/reconstruct.png" alt="Extract Logo" style="width: 100%; float: left; margin-right: 10px;" />
 <p style="text-align: justify;">
 </p>
 **reConstruct** was created for iterative 3D reconstruction of chromatin structures using scHi-C matrices (including enriched matrices based on classification results taken from the example of CycleSort).
