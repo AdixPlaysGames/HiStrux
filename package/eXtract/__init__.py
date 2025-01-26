@@ -2,7 +2,7 @@ from .process import process
 from .visualization import visualize
 from .imputation import imputation
 from .cdd import compute_cdd
-from .ins import compute_insulation_features
+from .ins import compute_insulation_features, compute_ins_features_for_each_chr
 from .compartments import calculate_cis_ab_comp
 from .tad import calculate_cis_tads, compute_tad_features
 from .pofs import compute_contact_scaling_exponent
