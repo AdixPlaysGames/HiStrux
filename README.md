@@ -1,7 +1,8 @@
 # HiStrux
 
-<img src="./addit_files/logo/histrux.png" alt="HiStrux Logo" width="22%" align="left" style="margin-right: 20px;" />
-
+<img src="./addit_files/logo/histrux.png" alt="HiStrux Logo" width="100%" align="left" style="margin-right: 20px;" />
+<br />
+<br />
 **HiStrux** is a Python package designed for reconstructing chromatin structures from single-cell Hi-C (scHi-C) data. 
 It integrates feature extraction, machine learning, and iterative molecular dynamics simulations to facilitate both 
 data enrichment and 3D genome modeling.
