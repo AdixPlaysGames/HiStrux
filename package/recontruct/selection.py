@@ -267,15 +267,6 @@ def filter_poor_cells(population_dir: str,
         print("Warning: no cell fulfils quality requirements")
     return np.array(filtered_cells)
 
-def random_model(cells, phase_num):
-    cells_num = len(cells)
-    
-    predictions = np.random.random((cells_num, phase_num))
-    predictions = predictions / np.sum(predictions, axis=1, keepdims=True)
-    labels = np.argmax(predictions, axis=1)
-
-    return labels, predictions
-
 def sample_series(cells_names: list[str], 
                   labels: list[int], 
                   predictions: list[np.ndarray], 

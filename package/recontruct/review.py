@@ -5,52 +5,52 @@ import pyvista as pv
 from typing import Optional, Union
 
 def remove_contact_bonds(gsd_trjectory: str) -> None:
-	"""
-	Will remove contact bonds from all frames of the simulation record .gsd file. Usefull for visualizations using 3rd party software.
+    """
+    Will remove contact bonds from all frames of the simulation record .gsd file. Usefull for visualizations using 3rd party software.
 
-	Parameters
-	----------
-	gsd_trajectory : str
-		Path to the .gsd file containing simulation record.
-	Returns
-	-------
-	None
+    Parameters
+    ----------
+    gsd_trajectory : str
+        Path to the .gsd file containing simulation record.
+    Returns
+    -------
+    None
 
-	Examples:
-	>>>	remove_contact_bonds('./test7/frame_4_traj.gsd')
-	File saved to the ./test7/frame_4_traj_no_contact.gsd
-	>>>	remove_contact_bonds('./test7/frame_4_traj.gsd')
-	An error occurred: [Errno 17] File exists: './test7/frame_4_traj_no_contact.gsd'
-	"""
-	new_frames = []
+    Examples:
+    >>>	remove_contact_bonds('./test7/frame_4_traj.gsd')
+    File saved to the ./test7/frame_4_traj_no_contact.gsd
+    >>>	remove_contact_bonds('./test7/frame_4_traj.gsd')
+    An error occurred: [Errno 17] File exists: './test7/frame_4_traj_no_contact.gsd'
+    """
+    new_frames = []
 
-	with gsd.hoomd.open(gsd_trjectory) as f:
-		frames = f[:]
-		for i in range(len(frames)):
-			frame = frames[i]
+    with gsd.hoomd.open(gsd_trjectory) as f:
+        frames = f[:]
+        for i in range(len(frames)):
+            frame = frames[i]
 
-			bonds_group = frame.bonds.group
-			bonds_types = frame.bonds.types
-			bonds_types_id = frame.bonds.typeid
+            bonds_group = frame.bonds.group
+            bonds_types = frame.bonds.types
+            bonds_types_id = frame.bonds.typeid
 
-			no_contact_idx = bonds_types_id != 5
+            no_contact_idx = bonds_types_id != bonds_types_id[-1]
 
-			frame.bonds.group = bonds_group[no_contact_idx]
-			frame.bonds.types = bonds_types[:-1]
-			frame.bonds.typeid = bonds_types_id[no_contact_idx]
-			frame.bonds.N = len(frame.bonds.typeid)
-			new_frames.append(frame)
+            frame.bonds.group = bonds_group[no_contact_idx]
+            frame.bonds.types = bonds_types[:-1]
+            frame.bonds.typeid = bonds_types_id[no_contact_idx]
+            frame.bonds.N = len(frame.bonds.typeid)
+            new_frames.append(frame)
 
-	
-	parts = gsd_trjectory.rsplit('.', 1)
-	gsd_trjectory_no_contact = parts[0] + '_no_contact.' + parts[1]
+    
+    parts = gsd_trjectory.rsplit('.', 1)
+    gsd_trjectory_no_contact = parts[0] + '_no_contact.' + parts[1]
 
-	try: 
-		with gsd.hoomd.open(gsd_trjectory_no_contact, mode='x') as f:
-			f.extend(new_frames)
-		print('File saved to the '+gsd_trjectory_no_contact)
-	except Exception as e:
-		print("An error occurred:", str(e))
+    try: 
+        with gsd.hoomd.open(gsd_trjectory_no_contact, mode='x') as f:
+            f.extend(new_frames)
+        print('File saved to the '+gsd_trjectory_no_contact)
+    except Exception as e:
+        print("An error occurred:", str(e))
 
 def visualize_sim(trajectory_dir: str, 
                   no_contacts: Optional[bool] = True, 
@@ -188,7 +188,8 @@ def visualize_sim(trajectory_dir: str,
         scalars = 'chromosom',
         cmap = my_cmap_chroms,
         point_size = particle_size, 
-        render_points_as_spheres = True)
+        render_points_as_spheres = True,
+        show_scalar_bar=False)
     
     # add chain bonds
     lines = pv.MultiBlock()
@@ -212,7 +213,8 @@ def visualize_sim(trajectory_dir: str,
         merged_lines,
         scalars = 'chromosom',
         cmap = my_cmap_chroms,
-        line_width = chain_width
+        line_width = chain_width,
+        show_scalar_bar=False
     )
 
     # add contacts bonds
@@ -237,8 +239,11 @@ def visualize_sim(trajectory_dir: str,
             merged_contact_lines,
             scalars = 'chromosom',
             cmap = my_cmap_contacts,
-            line_width = contact_width
+            line_width = contact_width,
+            show_scalar_bar=False
         )
+        
+    plotter.camera.Zoom(1.5)
 
     if no_visualize == True:
         plotter.screenshot(trajectory_dir.rsplit('.', 1)[0])
@@ -268,32 +273,32 @@ def inspect_gsd(gsd_traj: str) -> None:
     --------
     >>> inspect_gsd('./test_frame_traj.gsd')
     chromosom_legend: {0: 'chr1', 1: 'chr2', 2: 'chr3', 3: 'chr4', 4: 'chr5'}
-	particles num 169
-	particles_position: [[ -9.152195   14.470503    4.625657 ]
-	[ -8.966829   13.731618    4.279521 ]
-	[ -9.085836   14.734003    3.9680572]
-	[-10.579327   13.710347    4.338241 ]
-	[-10.103192   13.565733    4.786075 ]]
-	particles_types: ['chr1', 'chr2', 'chr3', 'chr4', 'chr5']
-	particles_types_id: [0 0 0 0 0]
-	particles_chrom: ['chr1', 'chr1', 'chr1', 'chr1', 'chr1']
+    particles num 169
+    particles_position: [[ -9.152195   14.470503    4.625657 ]
+    [ -8.966829   13.731618    4.279521 ]
+    [ -9.085836   14.734003    3.9680572]
+    [-10.579327   13.710347    4.338241 ]
+    [-10.103192   13.565733    4.786075 ]]
+    particles_types: ['chr1', 'chr2', 'chr3', 'chr4', 'chr5']
+    particles_types_id: [0 0 0 0 0]
+    particles_chrom: ['chr1', 'chr1', 'chr1', 'chr1', 'chr1']
 
-	bonds num 5018
-	bonds_particles: [[0 1]
-	[1 2]
-	[2 3]
-	[3 4]
-	[4 5]]
-	bonds_types: ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'contact']
-	bonds_types_id: [0 0 0 0 0]
-	bonds_legend: {0: 'chr1', 1: 'chr2', 2: 'chr3', 3: 'chr4', 4: 'chr5', 5: 'contact'}
-	bonds_legen_test {0: 'chr1', 1: 'chr2', 2: 'chr3', 3: 'chr4', 4: 'chr5', 5: 'contact'}
-	bonds_chrom: ['chr1', 'chr1', 'chr1', 'chr1', 'chr1']
-	no_contact_check [False False False ...  True  True  True]
-	bonds_particles_no_contact [array([0, 1], dtype=uint32), array([1, 2], dtype=uint32), array([2, 3], dtype=uint32), array([3, 4], dtype=uint32), array([4, 5], dtype=uint32)]
-	bonds_chrom_no_contact ['chr1', 'chr1', 'chr1', 'chr1', 'chr1']
-	bonds_particles_contact [array([0, 2], dtype=uint32), array([0, 3], dtype=uint32), array([0, 4], dtype=uint32), array([0, 5], dtype=uint32), array([0, 6], dtype=uint32)]
-	bonds_chrom_contact ['contact', 'contact', 'contact', 'contact', 'contact']
+    bonds num 5018
+    bonds_particles: [[0 1]
+    [1 2]
+    [2 3]
+    [3 4]
+    [4 5]]
+    bonds_types: ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'contact']
+    bonds_types_id: [0 0 0 0 0]
+    bonds_legend: {0: 'chr1', 1: 'chr2', 2: 'chr3', 3: 'chr4', 4: 'chr5', 5: 'contact'}
+    bonds_legen_test {0: 'chr1', 1: 'chr2', 2: 'chr3', 3: 'chr4', 4: 'chr5', 5: 'contact'}
+    bonds_chrom: ['chr1', 'chr1', 'chr1', 'chr1', 'chr1']
+    no_contact_check [False False False ...  True  True  True]
+    bonds_particles_no_contact [array([0, 1], dtype=uint32), array([1, 2], dtype=uint32), array([2, 3], dtype=uint32), array([3, 4], dtype=uint32), array([4, 5], dtype=uint32)]
+    bonds_chrom_no_contact ['chr1', 'chr1', 'chr1', 'chr1', 'chr1']
+    bonds_particles_contact [array([0, 2], dtype=uint32), array([0, 3], dtype=uint32), array([0, 4], dtype=uint32), array([0, 5], dtype=uint32), array([0, 6], dtype=uint32)]
+    bonds_chrom_contact ['contact', 'contact', 'contact', 'contact', 'contact']
     """
     
     with gsd.hoomd.open(gsd_traj) as f:
@@ -354,3 +359,137 @@ def inspect_gsd(gsd_traj: str) -> None:
     bonds_chrom_no_contact = np.vstack(bonds_chrom_no_contact)
     bonds_particles_contact = np.vstack(bonds_particles_contact)
     bonds_chrom_contact = np.vstack(bonds_chrom_contact)
+
+def get_aligned_structure(gsd_traj_to_align: str, 
+                          reference_positions: np.ndarray) -> np.ndarray:
+    """
+    Aligns structure within .gsd file to the reference postion using Kabsch algorithm.
+    
+    Parameters
+    ----------
+    gsd_traj_to_align : str
+        Directory of a gsd file.
+    reference_positions : np.ndarray
+        3xn ndarray holding postitions of reference structure particles
+    
+    Returns
+    -------
+    np.ndarray
+        Optimaly rotated and translated postitions of particles after alignment.
+        
+    Examples
+    --------
+    >>> get_aligned_structure()
+    
+    """
+    with gsd.hoomd.open(gsd_traj_to_align) as f:
+        frame_p = f[-1]
+
+    P = frame_p.particles.position
+    Q = reference_positions
+        
+    P_mass_center = np.mean(P, axis=0)
+    Q_mass_center = np.mean(Q, axis=0)
+
+    P_moved = P - P_mass_center + Q_mass_center
+        
+    C = np.dot(P_moved.T, Q)
+    U, S, V_trans = np.linalg.svd(C)
+    V = V_trans.T
+    reflection_check = np.linalg.det(np.dot(V, U.T))
+    if reflection_check < -0.2:
+        V[:, -1] *= -1
+
+    R = np.dot(V, U.T)
+
+    P_align = np.dot(P_moved, R.T)
+    
+    return P_align
+
+def get_centered_structure(gsd_traj: str) -> np.ndarray:
+    """
+    Calculates postion of particles from .gsd structure after being centered to the (0,0,0) point.
+    
+    Parameters
+    ----------
+    gsd_traj : str
+        Directory of a gsd file.
+    
+    Returns
+    -------
+    np.ndarray
+        Postitions of particles after centering.
+        
+    Examples
+    --------
+    >>> get_centered_structure()
+    
+    """
+    with gsd.hoomd.open(gsd_traj) as f:
+        frame = f[-1]
+    P = frame.particles.position
+    P_mass_center = np.mean(P, axis=0)
+    P_centered = P - P_mass_center
+
+    return P_centered
+
+def calculate_rmsd(positions_1: np.ndarray, 
+                   positions_2: np.ndarray) -> float:
+    """
+    Calculates root mean square deviation between two structures particles.
+    
+    Parameters
+    ----------
+    positions_1 : np.ndarray
+        First strcture particles positions.
+    positions_2 : np.ndarray
+        Second strcture particles positions.
+    
+    Returns
+    -------
+    float
+        Root mean square deviation between two structures particles.
+        
+    Examples
+    --------
+    >>> calculate_rmsd()
+    
+    """
+    rmsd = np.sqrt(np.sum(np.square(positions_1 - positions_2)) / positions_1.shape[0])
+    return rmsd
+
+def check_structures_rmsd(gsd_trajs: list[str]) -> list[float]:
+    """
+    Calculates root mean square deviation for set of structures between each of those structures and mean strucure based on them. Uses Kabsch algorithm to align all structures.
+    
+    Parameters
+    ----------
+    gsd_trajs : list[str]
+        List of .gsd files.
+    
+    Returns
+    -------
+    list[float]
+        List of root mean square deviation for each structure.
+        
+    Examples
+    --------
+    >>> check_structures_rmsd()
+    
+    """
+    reference_gsd = gsd_trajs[0]
+    centered_reference = get_centered_structure(reference_gsd)
+    aligned_structures = np.stack([centered_reference], axis=2)
+
+    for i in range(1, len(gsd_trajs)):
+        gsd_to_align = gsd_trajs[i]
+        aligned = get_aligned_structure(gsd_to_align, centered_reference)
+        aligned_structures = np.concatenate((aligned_structures, aligned[:,:,None]), axis=2)
+
+    mean_structure = np.mean(aligned_structures, axis=2)
+    rmsds = []
+    for i in range(len(gsd_trajs)):
+        structure_rmsd = calculate_rmsd(aligned_structures[:,:,i], mean_structure)
+        rmsds.append(structure_rmsd)
+
+    return rmsds

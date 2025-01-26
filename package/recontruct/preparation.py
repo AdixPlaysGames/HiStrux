@@ -41,19 +41,19 @@ def get_enriched_series_data(series_names: list[str],
     Examples
     --------
     >>> get_enriched_series_data(['Diploid_10_ACTGAGCG_TCGACTAG_R1fastqgz'], 
-    							 [[0.46271356 0.35939344 0.05374532 0.12414767]], 
+                                 [[0.46271356 0.35939344 0.05374532 0.12414767]], 
                                  [['Diploid_10_ACTCGCTA_TCGACTAG_R1fastqgz'
-									'Diploid_10_ACTGAGCG_AAGGCTAT_R1fastqgz'
-									'Diploid_10_ACTGAGCG_CCTAGAGT_R1fastqgz'
-									'Diploid_10_ACTGAGCG_CTATTAAG_R1fastqgz'
-									'Diploid_10_ACTGAGCG_GAGCCTTA_R1fastqgz'
-									'Diploid_10_ACTGAGCG_GCGTAAGA_R1fastqgz'
-									'Diploid_10_ACTGAGCG_TCGACTAG_R1fastqgz'
-									'Diploid_10_ATGCGCAG_AAGGCTAT_R1fastqgz'
-									'Diploid_10_ATGCGCAG_CCTAGAGT_R1fastqgz'
-									'Diploid_10_ATGCGCAG_CTATTAAG_R1fastqgz'
-									'Diploid_10_ATGCGCAG_GAGCCTTA_R1fastqgz'
-									'Diploid_10_ATGCGCAG_GCGTAAGA_R1fastqgz'], 
+                                    'Diploid_10_ACTGAGCG_AAGGCTAT_R1fastqgz'
+                                    'Diploid_10_ACTGAGCG_CCTAGAGT_R1fastqgz'
+                                    'Diploid_10_ACTGAGCG_CTATTAAG_R1fastqgz'
+                                    'Diploid_10_ACTGAGCG_GAGCCTTA_R1fastqgz'
+                                    'Diploid_10_ACTGAGCG_GCGTAAGA_R1fastqgz'
+                                    'Diploid_10_ACTGAGCG_TCGACTAG_R1fastqgz'
+                                    'Diploid_10_ATGCGCAG_AAGGCTAT_R1fastqgz'
+                                    'Diploid_10_ATGCGCAG_CCTAGAGT_R1fastqgz'
+                                    'Diploid_10_ATGCGCAG_CTATTAAG_R1fastqgz'
+                                    'Diploid_10_ATGCGCAG_GAGCCTTA_R1fastqgz'
+                                    'Diploid_10_ATGCGCAG_GCGTAAGA_R1fastqgz'], 
                                   '../../../data/nagano2017/nagano_1MB_raw.scool', 
                                   ['chr1', 'chr2', 'chr3', 'chr4', 'chr5'])
     ([array([[0.        , 0.        , 0.        , ..., 0.        , 0.        ,
@@ -69,18 +69,18 @@ def get_enriched_series_data(series_names: list[str],
           0.        ],
          [0.        , 0.        , 0.        , ..., 1.38629436, 0.        ,
           0.        ]])],
-	[    chrom      start        end
-	0    chr1          0    1000000
-	1    chr1    1000000    2000000
-	2    chr1    2000000    3000000
-	3    chr1    3000000    4000000
-	4    chr1    4000000    5000000
-	..    ...        ...        ...
-	844  chr5  148000000  149000000
-	845  chr5  149000000  150000000
-	846  chr5  150000000  151000000
-	847  chr5  151000000  152000000
-	848  chr5  152000000  152537259
+    [    chrom      start        end
+    0    chr1          0    1000000
+    1    chr1    1000000    2000000
+    2    chr1    2000000    3000000
+    3    chr1    3000000    4000000
+    4    chr1    4000000    5000000
+    ..    ...        ...        ...
+    844  chr5  148000000  149000000
+    845  chr5  149000000  150000000
+    846  chr5  150000000  151000000
+    847  chr5  151000000  152000000
+    848  chr5  152000000  152537259
     """
     hics = []
     bins = []
@@ -130,8 +130,8 @@ def get_series_data(series_names: list[str],
     Examples
     --------
     >>> get_series_data(['Diploid_10_ACTGAGCG_TCGACTAG_R1fastqgz'],
-    					'../../../data/nagano2017/nagano_1MB_raw.scool',
-						['chr1', 'chr2', 'chr3', 'chr4', 'chr5'])
+                        '../../../data/nagano2017/nagano_1MB_raw.scool',
+                        ['chr1', 'chr2', 'chr3', 'chr4', 'chr5'])
     ([array([[0.        , 0.        , 0.        , ..., 0.        , 0.        ,
           0.        ],
          [0.        , 0.        , 0.        , ..., 0.        , 0.        ,
@@ -145,18 +145,18 @@ def get_series_data(series_names: list[str],
           0.        ],
          [0.        , 0.        , 0.        , ..., 1.38629436, 0.        ,
           0.        ]])],
-	[    chrom      start        end
-	0    chr1          0    1000000
-	1    chr1    1000000    2000000
-	2    chr1    2000000    3000000
-	3    chr1    3000000    4000000
-	4    chr1    4000000    5000000
-	..    ...        ...        ...
-	844  chr5  148000000  149000000
-	845  chr5  149000000  150000000
-	846  chr5  150000000  151000000
-	847  chr5  151000000  152000000
-	848  chr5  152000000  152537259
+    [    chrom      start        end
+    0    chr1          0    1000000
+    1    chr1    1000000    2000000
+    2    chr1    2000000    3000000
+    3    chr1    3000000    4000000
+    4    chr1    4000000    5000000
+    ..    ...        ...        ...
+    844  chr5  148000000  149000000
+    845  chr5  149000000  150000000
+    846  chr5  150000000  151000000
+    847  chr5  151000000  152000000
+    848  chr5  152000000  152537259
     """
     hics = []
     bins = []
@@ -196,9 +196,9 @@ def get_supp_contacts(supp_cell: str,
     Examples
     --------
     >>> get_supp_contacts('Diploid_10_ACTCGCTA_TCGACTAG_R1fastqgz',
-						   100,
-						   './../../data/nagano2017/nagano_1MB_raw.scool',
-						   ['chr1', 'chr2', 'chr3', 'chr4', 'chr5'])
+                           100,
+                           './../../data/nagano2017/nagano_1MB_raw.scool',
+                           ['chr1', 'chr2', 'chr3', 'chr4', 'chr5'])
     array([[0., 0., 0., ..., 0., 0., 0.],
        [0., 0., 0., ..., 0., 0., 0.],
        [0., 0., 0., ..., 0., 0., 0.],
@@ -207,9 +207,9 @@ def get_supp_contacts(supp_cell: str,
        [0., 0., 0., ..., 0., 0., 0.],
        [0., 0., 0., ..., 0., 0., 0.]])
     >>> np.count_nonzero(get_supp_contacts('Diploid_10_ACTCGCTA_TCGACTAG_R1fastqgz',
-						   100,
-						   './../../data/nagano2017/nagano_1MB_raw.scool',
-						   ['chr1', 'chr2', 'chr3', 'chr4', 'chr5']))
+                           100,
+                           './../../data/nagano2017/nagano_1MB_raw.scool',
+                           ['chr1', 'chr2', 'chr3', 'chr4', 'chr5']))
     198
     """
     supp_hic, bins_neighbour = selec.load_data(population_dir+'::'+supp_cell, chroms_list)
@@ -262,13 +262,13 @@ def enrich_hic(ref_cell: str,
     Examples
     --------
     >>> enrich_hic('Diploid_10_ACTGAGCG_TCGACTAG_R1fastqgz', 
-    			   ['Diploid_10_ACTCGCTA_TCGACTAG_R1fastqgz','Diploid_10_ACTGAGCG_AAGGCTAT_R1fastqgz'], 
+                   ['Diploid_10_ACTCGCTA_TCGACTAG_R1fastqgz','Diploid_10_ACTGAGCG_AAGGCTAT_R1fastqgz'], 
                    '../../../data/nagano2017/nagano_1MB_raw.scool', 
                    ['chr1', 'chr2', 'chr3', 'chr4', 'chr5'], 
                    debug=True)
     reference contacts num 9782
-	support new contacts num 1816
-	new total contacts: 11292
+    support new contacts num 1816
+    new total contacts: 11292
     (array([[0.        , 0.        , 0.        , ..., 0.        , 0.        ,
          0.        ],
         [0.        , 0.        , 0.        , ..., 0.        , 0.        ,
@@ -282,18 +282,18 @@ def enrich_hic(ref_cell: str,
          0.        ],
         [0.        , 0.        , 0.        , ..., 1.38629436, 0.        ,
          0.        ]]),
-		chrom      start        end
-	0    chr1          0    1000000
-	1    chr1    1000000    2000000
-	2    chr1    2000000    3000000
-	3    chr1    3000000    4000000
-	4    chr1    4000000    5000000
-	..    ...        ...        ...
-	844  chr5  148000000  149000000
-	845  chr5  149000000  150000000
-	846  chr5  150000000  151000000
-	847  chr5  151000000  152000000
-	848  chr5  152000000  152537259
+        chrom      start        end
+    0    chr1          0    1000000
+    1    chr1    1000000    2000000
+    2    chr1    2000000    3000000
+    3    chr1    3000000    4000000
+    4    chr1    4000000    5000000
+    ..    ...        ...        ...
+    844  chr5  148000000  149000000
+    845  chr5  149000000  150000000
+    846  chr5  150000000  151000000
+    847  chr5  151000000  152000000
+    848  chr5  152000000  152537259
     """
     ref_hic, bins_ref = selec.load_data(population_dir+'::'+ref_cell, chroms_list)
     shape = ref_hic.shape
@@ -342,7 +342,7 @@ def matrix_scalling(matrix: np.ndarray,
     >>> print(hic.shape)
     (849, 849)
     >>> hic_scaled = matrix_scalling(hic, 8)
-	>>> print(hic_scaled.shape)
+    >>> print(hic_scaled.shape)
     (106, 106)
     """
     rows, cols = matrix.shape
@@ -386,9 +386,9 @@ def bins_scalling(bins: pd.Series,
     --------
     >>> print(len(bin))
     849
-	>>> bin_scaled = bins_scalling(bin, 106)
-	>>> print(len(bin_scaled))
-	106
+    >>> bin_scaled = bins_scalling(bin, 106)
+    >>> print(len(bin_scaled))
+    106
     """
     scale_ratio = len(bins) / desired_num_bins
     
@@ -414,7 +414,8 @@ def bins_scalling(bins: pd.Series,
 
 def generate_iterations_data(hics: list[np.ndarray], 
                              bins: list[pd.Series], 
-                             n: int, 
+                             n: int,
+                             scale: int, 
                              p: Optional[int] = 90) -> tuple[list[np.ndarray, list[pd.Series]]]:
     """
     Scales down number of bins and size of contact matricies of all HiC maps and bins descriptions provided to achieve desired number of verisons. Parameter n controls number of data sets to be reached at the end, where first data set is leaved as original size data. After each scaling remove_diag_plus and normalize_hic functions are applied again.
@@ -490,62 +491,62 @@ def generate_iterations_data(hics: list[np.ndarray],
            0.        ],
           [0.        , 0.        , 0.        , ..., 0.78675043, 0.        ,
            0.        ]])]],
-	[[    chrom      start        end
-	0    chr1          0    1000000
-	1    chr1    1000000    2000000
-	2    chr1    2000000    3000000
-	3    chr1    3000000    4000000
-	4    chr1    4000000    5000000
-	..    ...        ...        ...
-	844  chr5  148000000  149000000
-	845  chr5  149000000  150000000
-	846  chr5  150000000  151000000
-	847  chr5  151000000  152000000
-	848  chr5  152000000  152537259
-	
-	[849 rows x 3 columns],
-		chrom      start        end
-	0    chr1          0    6000000
-	1    chr1    6000000   11000000
-	2    chr1   11000000   16000000
-	3    chr1   16000000   21000000
-	4    chr1   21000000   26000000
-	..    ...        ...        ...
-	164  chr5  128000000  133000000
-	165  chr5  133000000  138000000
-	166  chr5  138000000  143000000
-	167  chr5  143000000  148000000
-	168  chr5  148000000  152537259
-	
-	[169 rows x 3 columns]],
-	[    chrom      start        end
-	0    chr1          0    1000000
-	1    chr1    1000000    2000000
-	2    chr1    2000000    3000000
-	3    chr1    3000000    4000000
-	4    chr1    4000000    5000000
-	..    ...        ...        ...
-	844  chr5  148000000  149000000
-	845  chr5  149000000  150000000
-	846  chr5  150000000  151000000
-	847  chr5  151000000  152000000
-	848  chr5  152000000  152537259
-	
-	[849 rows x 3 columns],
-		chrom      start        end
-	0    chr1          0    6000000
-	1    chr1    6000000   11000000
-	2    chr1   11000000   16000000
-	3    chr1   16000000   21000000
-	4    chr1   21000000   26000000
-	..    ...        ...        ...
-	164  chr5  128000000  133000000
-	165  chr5  133000000  138000000
-	166  chr5  138000000  143000000
-	167  chr5  143000000  148000000
-	168  chr5  148000000  152537259
-	
-	[169 rows x 3 columns]]])
+    [[    chrom      start        end
+    0    chr1          0    1000000
+    1    chr1    1000000    2000000
+    2    chr1    2000000    3000000
+    3    chr1    3000000    4000000
+    4    chr1    4000000    5000000
+    ..    ...        ...        ...
+    844  chr5  148000000  149000000
+    845  chr5  149000000  150000000
+    846  chr5  150000000  151000000
+    847  chr5  151000000  152000000
+    848  chr5  152000000  152537259
+    
+    [849 rows x 3 columns],
+        chrom      start        end
+    0    chr1          0    6000000
+    1    chr1    6000000   11000000
+    2    chr1   11000000   16000000
+    3    chr1   16000000   21000000
+    4    chr1   21000000   26000000
+    ..    ...        ...        ...
+    164  chr5  128000000  133000000
+    165  chr5  133000000  138000000
+    166  chr5  138000000  143000000
+    167  chr5  143000000  148000000
+    168  chr5  148000000  152537259
+    
+    [169 rows x 3 columns]],
+    [    chrom      start        end
+    0    chr1          0    1000000
+    1    chr1    1000000    2000000
+    2    chr1    2000000    3000000
+    3    chr1    3000000    4000000
+    4    chr1    4000000    5000000
+    ..    ...        ...        ...
+    844  chr5  148000000  149000000
+    845  chr5  149000000  150000000
+    846  chr5  150000000  151000000
+    847  chr5  151000000  152000000
+    848  chr5  152000000  152537259
+    
+    [849 rows x 3 columns],
+        chrom      start        end
+    0    chr1          0    6000000
+    1    chr1    6000000   11000000
+    2    chr1   11000000   16000000
+    3    chr1   16000000   21000000
+    4    chr1   21000000   26000000
+    ..    ...        ...        ...
+    164  chr5  128000000  133000000
+    165  chr5  133000000  138000000
+    166  chr5  138000000  143000000
+    167  chr5  143000000  148000000
+    168  chr5  148000000  152537259
+    
+    [169 rows x 3 columns]]])
     """
      
     hics_scales = []
@@ -559,7 +560,7 @@ def generate_iterations_data(hics: list[np.ndarray],
         bin_scales = [bin]
 
         for i in range(n-1):
-            hic_scaled = matrix_scalling(hic, 5*(i+1))
+            hic_scaled = matrix_scalling(hic, scale**(i+1))
             selec.remove_diag_plus(hic_scaled)
             selec.normalize_hic(hic_scaled, p)
             hic_scales.append(hic_scaled)
@@ -584,7 +585,7 @@ def check_iterations_setup(hics_scales: list[np.ndarray],
     hics_scales : list[str]
         List of verisions of hic matrix. 
     cell_idx : int
-		Index of cell that is to be checked from hic_scales list.
+        Index of cell that is to be checked from hic_scales list.
     orientation :  Optional[str] = 'Horizontal'
         Orientation of output plot.
 
@@ -599,12 +600,12 @@ def check_iterations_setup(hics_scales: list[np.ndarray],
     --------
     >>> check_iterations_setup(hics_scales, 1)
     computational load:
-	iteration 1
-	number of particles: 169
-	number of bonds: 5154
-	iteration 2
-	number of particles: 849
-	number of bonds: 22498
+    iteration 1
+    number of particles: 169
+    number of bonds: 5154
+    iteration 2
+    number of particles: 849
+    number of bonds: 22498
     """
     print('computational load:')
     iteration_num = len(hics_scales[cell_idx])
