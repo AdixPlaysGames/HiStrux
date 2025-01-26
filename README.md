@@ -111,3 +111,90 @@ To install **HiStrux** locally, follow these steps:
     pip install .
     ```
    This will run the `setup.py` file and handle the installation of all required components. After selecting the `histrux_env` kernel, you can start using HiStrux without any issues.
+
+<div style="text-align: center; margin-bottom: 20px;">
+    <hr style="border: 1px solid white; width: 80%; margin: 0 auto;" />
+</div>
+
+## CycleSort as a Use Case Example
+
+<img src="./addit_files/logo\cyclesort.png" alt="Extract Logo" style="width: 100%; float: left; margin-right: 10px;" />
+<p style="text-align: justify;">
+</p>
+
+HiStrux's **reConstruct** module enables the enrichment of results by incorporating an additional variable: the assignment vector to interphase stages. By extracting data using the **eXtract** module, you can create various models, including classifiers for interphase stages. **CycleSort** is one such proposal, and below is a complete example implementation:
+
+```python
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Input
+
+# Copy the dataset
+df = patski_df.copy()
+
+# Define stage mapping
+stage_mapping = {
+    'S': [0, 1, -1],
+    'G1': [-1, -1, 1],
+    'G2M': [1, 0, 1]
+}
+
+# Filter and map stages
+df = df[df['Stage'].isin(stage_mapping.keys())]
+df['Target'] = df['Stage'].map(stage_mapping)
+
+# Extract targets and features
+y = np.array(df['Target'].tolist())
+X = df.drop(columns=['cell_id', 'p_of_s', 'Stage', 'Target']).fillna(0).values
+
+# Scale the features
+scaler = MinMaxScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Split data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Build the neural network model
+model = Sequential([
+    Input(shape=(X_train.shape[1],)),
+    Dense(64, activation='relu'),
+    Dense(32, activation='relu'),
+    Dense(3, activation='linear')
+])
+
+# Compile and train the model
+model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
+
+# Function to map predictions to the closest class
+def map_to_closest_class(predictions, targets):
+    class_vectors = np.unique(targets, axis=0)
+    mapped_classes = []
+    for pred in predictions:
+        distances = np.linalg.norm(class_vectors - pred, axis=1)
+        mapped_classes.append(np.argmin(distances))
+    return np.array(mapped_classes)
+
+# Predict and map classes for training and testing data
+reduced_train = model.predict(X_train)
+reduced_test = model.predict(X_test)
+mapped_train = map_to_closest_class(reduced_train, y_train)
+mapped_test = map_to_closest_class(reduced_test, y_train)
+
+# Map true test labels for comparison
+true_test = map_to_closest_class(y_test, y_train)
+
+# Calculate and display accuracy
+accuracy = np.mean(mapped_test == true_test)
+print(f"Model Accuracy: {accuracy:.2f}")
+```
+The average accuracy of the model is 74%. Results can be shown on a plot:
+<img src="./addit_files/vis/3d.png" alt="Extract Logo" style="width: 100%; float: left; margin-right: 10px;" />
+<p style="text-align: justify;">
+</p>
+
+
+
+
