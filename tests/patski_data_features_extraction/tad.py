@@ -18,25 +18,27 @@ columns = [
 
 path = "C:/Users/zareb/OneDrive/Desktop/Studies/Inżynierka/CIRCLET/CIRCLET_code/CIRCLET/patski.S_5.two.bedpe"
 cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
-cell_df = cell_df[cell_df['cell_id'] == 'SCG0088_TTGTGTGCACGGTACT-1']
+cell_df = cell_df[cell_df['cell_id'] == 'SCG0089_TCATGCCTCCCGTTAC-1']
+cell_df['chromosome_1'] = cell_df['chromosome_1'].str[:-2]
+cell_df['chromosome_2'] = cell_df['chromosome_2'].str[:-2]
 
-print(calculate_cis_tads(
+
+
+tad = compute_tad_features(
     cell_df,
-    bin_size=300_000,
-    w=5,
-    p=0.85,
-    imputation_involved=True,
-    boundary_threshold=0.05,
-    show_plot=True
-))
-
-
-print(compute_tad_features(
-    cell_df,
-    bin_size=300_000,
+    bin_size=600_000,
     w=3,
     p=0.85,
     imputation_involved=True,
-    boundary_threshold=0.1,
+    boundary_threshold=0.05,
     show_plot=False
-))
+)
+
+vector = []
+values = []
+vector += [value for key, value in tad.items()]
+values += [key for key, value in tad.items()]
+# 'tad_n_tads_mean', 'tad_mean_bin_size', 'tad_density_mean'
+
+print(vector)
+print(values)

@@ -1,128 +1,152 @@
 import pandas as pd
 import tkinter as tk
+import numpy as np
 from pandastable import Table, config # type: ignore
 from .process import process
 from .primary import compute_basic_metrics
 from .compartments import calculate_cis_ab_comp
 from .cdd import compute_cdd
-from .ins import compute_insulation_features
+from .ins import compute_ins_features_for_each_chr
 from .mcm import compute_mcm
 from .pofs import compute_contact_scaling_exponent
-from .primary import compute_basic_metrics
 from .tad import compute_tad_features
 
 
 # process
-def eXtract(cell_df: pd.DataFrame,
+def eXtract(cell_dataframe: pd.DataFrame,
             cell_id: str = None,
             chromosome_lengths: list[tuple[str, int]] = None,
-            bin_size: int = 1_000_000,
+            bin_size: int = 500_000,
             selected_chromosomes: list[str] = None,
             trans_interactions: bool = True,
             mapping_quality_involved: bool = False,
             substring = 2,
 
             # compartments
-            w: int = 4,
-            p: float = 0.85,
-            imputation_involved: bool = True,
+            compartments_w: int = 4,
+            compartments_p: float = 0.85,
+            compartments_bin_size: int = 400_000,
 
             # ins
+            ins_bin_size: int = 400_000,
             scale: int = 15,
+            ins_p: float=0.85,
+            ins_w: int = 3,
 
-            # mcm
+            # mcm | tutaj wywalone
             near_threshold: float = 2.0,
-            mid_threshold: float=5.0,
+            mid_threshold: float=6.0,
 
             # pofs
             min_distance: int = 1,
-            max_distance: int = None,
+            max_distance: int = 100,
+            pofs_bin_size: int= 500_000,
+            num_log_bins: int = 40,
 
             # tad
-            tad_boundry_threshold: float = 0.3,
+            tad_bin_size: int = 300_000,
+            tad_w: int = 3,
+            tad_boundry_threshold: float = 0.05,
             out_prefix: str = None,
-            tad_show_plot: bool = False,
 
             # main
             vectorize: bool = False
             ) -> dict:
     
+    cell_df = cell_dataframe.copy()
+
     if cell_id is None:
         cell_id = cell_df['cell_id'][0]
-
-    cell = cell_df[cell_df['cell_id'] == cell_id].copy()
-
-    cell_matrix = process(cell, cell_id=cell_id, chromosome_lengths=chromosome_lengths, bin_size=bin_size,
-                      selected_chromosomes=selected_chromosomes, trans_interactions=trans_interactions, 
-                      mapping_quality_involved=mapping_quality_involved, substring=substring)
     
+    cell_df = cell_df[cell_df['cell_id'] == cell_id]
+
     if substring is not None:
-        cell['chromosome_1'] = cell['chromosome_1'].str[:-substring]
-        cell['chromosome_2'] = cell['chromosome_2'].str[:-substring]
+        cell_df['chromosome_1'] = cell_df['chromosome_1'].str[:-substring]
+        cell_df['chromosome_2'] = cell_df['chromosome_2'].str[:-substring]
 
-    def partition_and_calculate_means(data, partitions=7):
-        partition_size = len(data) // partitions
-        partitioned_data = [data[i * partition_size:(i + 1) * partition_size] for i in range((partitions - 1))]
-        partitioned_data.append(data[(partitions - 1) * partition_size:])
-        means = [sum(partition) / len(partition) if partition else 0 for partition in partitioned_data]
-        return means
-    
+    cell_matrix = process(cell_df, cell_id=cell_id, chromosome_lengths=chromosome_lengths, bin_size=bin_size,
+                          selected_chromosomes=selected_chromosomes, trans_interactions=True, substring=None)
 
+    # Compartments ---------------------------------
     compartments = calculate_cis_ab_comp(
-        contacts_df=cell, bin_size=bin_size, w=w, p=p,
-        imputation_involved=imputation_involved, plot=False
+        cell_df,
+        bin_size = compartments_bin_size,
+        w = compartments_w,
+        p = compartments_p,
+        imputation_involved=True,
+        plot = False
     )
 
-    ins = compute_insulation_features(cell=cell_matrix, scale=scale)
+    # MCM ------------------------------------------
+    mcm = compute_mcm(cell_matrix, near_threshold=near_threshold, mid_threshold=mid_threshold)
 
-    mcm = compute_mcm(hic_matrix=cell_matrix, bin_size=bin_size, near_threshold=near_threshold, mid_threshold=mid_threshold)
-
-    pofs = compute_contact_scaling_exponent(contact_matrix=cell_matrix, min_distance=min_distance, max_distance=max_distance)
-
-    primary = compute_basic_metrics(cell)
-
-    tad = compute_tad_features(contacts_df=cell, bin_size=bin_size, w=w, p=p, imputation_involved=imputation_involved, 
-                               boundary_threshold=tad_boundry_threshold, out_prefix=out_prefix, show_plot=tad_show_plot)
+    # P(s) -----------------------------------------
+    cell_matrix_cis = process(cell_df, cell_id=cell_id, chromosome_lengths=chromosome_lengths, bin_size=pofs_bin_size,
+                              selected_chromosomes=selected_chromosomes, trans_interactions=False, substring=None)
+    pofs = compute_contact_scaling_exponent(cell_matrix_cis, min_distance=min_distance, max_distance=max_distance,
+                                            plot=False, num_log_bins=num_log_bins)
     
+    # Primary --------------------------------------
+    primary = compute_basic_metrics(cell_df)
+
+    # TAD ------------------------------------------
+    if vectorize == False:
+        tad = compute_tad_features(cell_df, bin_size=tad_bin_size, w=tad_w, p=0.85, imputation_involved=True,
+                                boundary_threshold=tad_boundry_threshold, out_prefix=out_prefix, show_plot=False)
+        
+
+    # Ins ------------------------------------------
+    ins = compute_ins_features_for_each_chr(cell_df, bin_size=ins_bin_size, plot=False,
+                                            plot_insulation=False, w=ins_w, p=ins_p, scale=scale)
+    
+
+    ###############################################################################################################
+
+
     if vectorize:
         vector = []
-        vector += compartments['fraction'].tolist()
-        vector += [value for key, value in ins.items() if key != "vector"]
-        vector += [value for key, value in mcm.items()]
-        vector += [value for key, value in pofs.items() if key not in {"distances", "p_of_s"}]
+        values = []
+        # Primary
         vector += [value for key, value in primary.items()]
-        vector += [value for key, value in tad.items()]
-        return vector
+        values += [key for key, value in primary.items()]
+        # Compartments
+        vector += compartments['fraction'].tolist()
+        values += compartments['contact_type'].tolist()
+        # MCM
+        vector += [value for key, value in mcm.items()]
+        values += [key for key, value in mcm.items()]
+        # P(s)
+        vector += [value for key, value in pofs.items() if key not in {"pofs_distances"}]
+        values += [key for key, value in pofs.items() if key not in {"pofs_distances"}]
+        # Ins
+        vector += [item[1][1] for item in ins]
+        values += [f"{item[0]}_value" for item in ins]
+
+        return values, vector
     
     else:
         row_data = {
         "contact_type_AA": compartments.loc[0, 'fraction'],
         "contact_type_BB": compartments.loc[1, 'fraction'],
         "contact_type_AB": compartments.loc[2, 'fraction'],
-        **{key: value for key, value in ins.items() if key != "ins_vector"},
         **mcm,
         **{key: value for key, value in pofs.items() if key not in {"pofs_distances", "p_of_s"}},
         **primary,
-        **tad
+        **tad,
+        "Bin size in bp": bin_size
         }
 
         extract_df = pd.DataFrame([row_data])
-        def show_dataframe(df, icon_path):
+        def show_dataframe(df):
             """
             Displays a DataFrame in a tkinter window with customized settings.
             - df: pandas DataFrame
-            - icon_path: Path to the icon (e.g., icon.png)
             """
 
             column_renaming_map = {
                 "contact_type_AA": "Contact Type AA",
                 "contact_type_BB": "Contact Type BB",
                 "contact_type_AB": "Contact Type AB",
-                "mean_ins": "Mean INS",
-                "median_ins": "Median INS",
-                "std_ins": "STD INS",
-                "p10_ins": "P10 INS",
-                "p90_ins": "P90 INS",
                 "mcm_near_ratio": "MCM Near Ratio",
                 "mcm_mid_ratio": "MCM Mid Ratio",
                 "mcm_far_ratio": "MCM Far Ratio",
@@ -194,10 +218,16 @@ def eXtract(cell_df: pd.DataFrame,
             window_height = 450
             root.geometry(f"{window_width}x{window_height}")
 
-            try:
-                root.iconphoto(True, tk.PhotoImage(file=icon_path))
-            except Exception as e:
-                print(f"Icon loading failed: {e}")
+            x_icon = tk.PhotoImage(width=16, height=16)
+            # Najpierw wypełniamy tło białym
+            for x in range(16):
+                for y in range(16):
+                    x_icon.put("white", (x, y))
+            # Rysujemy dwie linie tworzące 'X'
+            for i in range(16):
+                x_icon.put("black", (i, i))
+                x_icon.put("black", (15 - i, i))
+            root.iconphoto(True, x_icon)
 
             frame = tk.Frame(root, width=window_width, height=window_height)
             frame.pack(fill='both', expand=True, padx=10, pady=10)
@@ -222,5 +252,5 @@ def eXtract(cell_df: pd.DataFrame,
 
             root.mainloop()
 
-        show_dataframe(extract_df, '')
+        show_dataframe(extract_df)
         return extract_df

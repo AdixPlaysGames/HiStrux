@@ -24,8 +24,8 @@ chromosome_lengths = [('chr1', 195471971), ('chr2', 182113224), ('chr3', 1600396
                       ('chr17', 94987271), ('chr18', 90702639), ('chr19', 61431566), ('chrX', 171031299)]
 
 path = "C:/Users/zareb/OneDrive/Desktop/Studies/Inżynierka/CIRCLET/CIRCLET_code/CIRCLET/patski.S_5.two.bedpe"
-cell_id = 'SCG0088_TTGTGTGCACGGTACT-1'
+cell_id = 'SCG0089_TCATGCCTCCCGTTAC-1'
 
 cell_df = pd.read_csv(path, sep="\t", names=columns, comment='#')
-extracted = eXtract(cell_df=cell_df, cell_id=cell_id, imputation_involved=True, vectorize=False, bin_size=500_000)
+extracted = eXtract(cell_dataframe=cell_df, cell_id=cell_id, bin_size=1_000_000, vectorize=False)
 print(extracted)

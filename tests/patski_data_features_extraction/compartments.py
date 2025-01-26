@@ -26,9 +26,9 @@ cell_df = cell_df[cell_df['cell_id'] == 'SCG0089_TCATGCCTCCCGTTAC-1']
 
 print(calculate_cis_ab_comp(
     cell_df,
-    bin_size = 500_000,
+    bin_size = 300_000,
     w  = 4,
     p = 0.85,
     imputation_involved=True,
-    plot = True
+    plot = False
 ))

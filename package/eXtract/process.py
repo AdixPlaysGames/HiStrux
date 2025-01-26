@@ -56,6 +56,7 @@ def process(
   
     # If no cell_id is provided, use the first one found in the DataFrame
     if cell_id is None:
+      cells = cells.reset_index(drop=True)
       cell_id = cells['cell_id'][0]
     
     # Create a copy of the relevant data for the specified cell
@@ -71,6 +72,7 @@ def process(
         cell = cell[cell['chromosome_1'] == cell['chromosome_2']]
 
     # Assign default mouse chromosome lengths if none are provided
+    # These values are basic, provided from the website
     if chromosome_lengths is None:
         chromosome_lengths = [('chr1', 195471971), ('chr2', 182113224), ('chr3', 160039680), ('chr4', 156508116), 
                               ('chr5', 151834684), ('chr6', 149736546), ('chr7', 145441459), ('chr8', 129401213), 
@@ -88,7 +90,6 @@ def process(
     chromosome_offsets = np.cumsum([0] + [np.int64(length) for _, length in chromosome_lengths], dtype=np.int64)
     chromosome_map = {chrom: offset for (chrom, _), offset in zip(chromosome_lengths, chromosome_offsets)}
 
-    # Calculate the genomic position by adding the chromosome offset to the start position
     cell['position_1'] = cell['start_1'] + cell['chromosome_1'].map(chromosome_map)
     cell['position_2'] = cell['start_2'] + cell['chromosome_2'].map(chromosome_map)
 
@@ -107,11 +108,9 @@ def process(
         # Define the weight of the contact as the product of contact size and mapping quality
         cell['contact_weight'] = (cell['contact_size'] * cell['mapping_quality']).round().astype(int)
 
-        # Group by bin1 and bin2, summing the contact weights
         grouped = cell.groupby(['bin1', 'bin2'], as_index=False)['contact_weight'].sum()
         grouped_array = grouped.to_numpy()
     else:
-        # If we are counting the number of contacts, group by bin1, bin2 and use the size
         grouped = cell.groupby(['bin1', 'bin2'], as_index=False).size()
         grouped_array = grouped.to_numpy()
 
@@ -120,7 +119,15 @@ def process(
     num_bins = total_genome_length // bin_size
     contact_matrix = np.zeros((num_bins, num_bins), dtype=int)
 
-    # Populate the contact matrix using the grouped results, then make it symmetric
+    # Ensure bin indices do not exceed the contact matrix dimensions as also determine and report the number of bins that were excluded
+    max_bin = num_bins - 1
+    mask = (grouped_array[:, 0].astype(int) <= max_bin) & (grouped_array[:, 1].astype(int) <= max_bin)
+    cut_bins = len(grouped_array) - np.sum(mask)
+    grouped_array = grouped_array[mask]
+
+    if cut_bins > 0:
+        print(f"Cut {cut_bins} bins that exceeded the matrix range due to provided chromosome lengths in the input. If more than one bin was cut, please check the correctness of the chromosome lengths.")
+    
     contact_matrix[grouped_array[:, 0].astype(int), grouped_array[:, 1].astype(int)] = grouped_array[:, 2].astype(int)
     contact_matrix += contact_matrix.T - np.diag(contact_matrix.diagonal())
 

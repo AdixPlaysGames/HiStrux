@@ -3,11 +3,9 @@ import pkg_resources
 packages = [
     "numpy",
     "matplotlib",
-    "collections",
     "pandas",
     "scipy",
-    "sklearn",
-    "tkinter",
+    "scikit-learn",
     "pandastable",
     "seaborn",
 ]

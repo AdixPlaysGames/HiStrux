@@ -4,7 +4,8 @@ from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
 def visualize(matrix: np.ndarray, title: str = 'scHi-C',
-                xlabel: str = 'Genome position 1', ylabel: str = 'Genome position 2') -> None:
+                xlabel: str = 'Genome position 1', ylabel: str = 'Genome position 2',
+                return_plot: bool=False) -> None:
     """
     Visualizes a given contact matrix using a heatmap.
 
@@ -21,17 +22,13 @@ def visualize(matrix: np.ndarray, title: str = 'scHi-C',
     Returns:
     - None
         The function generates a heatmap and displays it. Does not return any value.
-
     Raises:
     - ValueError: If the input 'matrix' is not a square 2D numpy array.
     """
     if not isinstance(matrix, np.ndarray) or matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
         raise ValueError("Input 'matrix' must be a square 2D numpy array.")
 
-    # Define a custom color palette
     custom_cmap = LinearSegmentedColormap.from_list('custom_blue', ['#f7f7f7', '#016959'], N=256)
-
-    # Create the plot
     plt.figure(figsize=(12, 10))
     sns.heatmap(matrix, cmap=custom_cmap, square=True, cbar_kws={'shrink': 0.5})
     plt.title(title, fontsize=16)

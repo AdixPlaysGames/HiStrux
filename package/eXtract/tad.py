@@ -68,11 +68,8 @@ def build_tad_df(chrom, boundaries, n_bins, bin_size):
         start_bin = b
         tad_id += 1
 
-    # Add a final TAD segment if any bins remain.
     if start_bin < n_bins:
         tads.append((chrom, tad_id, start_bin, n_bins - 1))
-
-    # Convert the list of TADs into a DataFrame, including genomic coordinates.
     data_out = []
     for (chr_, tid, sb, eb) in tads:
         sb_bp = sb * bin_size
@@ -94,13 +91,10 @@ def compute_tad_stats(tad_df: pd.DataFrame) -> pd.DataFrame:
     """
     Computes selected TAD statistics for each chromosome.
     """
-    # If the DataFrame is empty, return an empty stats table.
     if tad_df.empty:
         return pd.DataFrame(columns=["chromosome", "n_tads", "mean_size_in_bins",
                                      "min_size_in_bins", "max_size_in_bins"])
 
-    # Group by chromosome and calculate basic statistics such as 
-    # the number of TADs, mean, minimum, and maximum size in bins.
     stats_list = []
     for chrom, group in tad_df.groupby("chromosome"):
         n_tads = len(group)
@@ -131,37 +125,28 @@ def plot_tads_for_chrom(
     """
     N = contact_matrix.shape[0]
     
-    # Define custom colormap
     from matplotlib.colors import LinearSegmentedColormap
     custom_blue = LinearSegmentedColormap.from_list("custom_blue", ['#f7f7f7', '#016959'])
 
     fig, ax = plt.subplots(figsize=(6, 5))
-    # Apply a logarithmic transform: log1p, and use the custom colormap.
     ax.imshow(np.log1p(contact_matrix), 
               cmap=custom_blue, 
               origin='upper', 
               interpolation='nearest')
 
-    # Draw boundary lines for each TAD boundary in both x and y directions.
     for b in boundaries:
         if 0 < b < N:
             ax.axhline(y=b - 0.5, color='blue', linewidth=0.7)
             ax.axvline(x=b - 0.5, color='blue', linewidth=0.7)
 
-    # Set title with increased font size
     ax.set_title(f"Chrom: {chrom} - TAD boundaries", fontsize=14)
-    
-    # Set axis labels with increased font size and hide ticks
     ax.set_xlabel("Genome position 1", fontsize=12)
     ax.set_ylabel("Genome position 2", fontsize=12)
     ax.set_xticks([])
     ax.set_yticks([])
 
-    # Optionally save the figure.
     if out_prefix is not None:
         plt.savefig(f"{out_prefix}_{chrom}_tads.png", dpi=180, bbox_inches='tight')
-
-    # Show the plot or close it, based on the show_plot parameter.
     if show_plot:
         plt.show()
     else:
@@ -174,11 +159,11 @@ def calculate_cis_tads(
     bin_size: int = 1_000_000,
     w: int = 5,
     p: float = 0.85,
-    imputation_involved: bool = False,
+    imputation_involved: bool = True,
     boundary_threshold: float = 0.8,
     out_prefix: str = None,
     show_plot: bool = False,
-    substring: int = 2
+    substring: int = None
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Extended version that, after detecting TADs, creates 
@@ -205,7 +190,7 @@ def calculate_cis_tads(
     show_plot : bool, optional
         If True, displays plots using plt.show(); if False, plots are not displayed.
     substring : int, optional
-        Number of characters to trim from the end of chromosome names, default 2.
+        Number of characters to trim from the end of chromosome names, default None.
 
     Returns:
     --------
@@ -215,16 +200,15 @@ def calculate_cis_tads(
           "tad_df"   : pd.DataFrame with all identified TADs.
     """
 
-    # Shorten chromosome names by removing the last 'substring' characters
-    contacts_df['chromosome_1'] = contacts_df['chromosome_1'].str[:-substring]
-    contacts_df['chromosome_2'] = contacts_df['chromosome_2'].str[:-substring]
+    if substring is not None:
+        contacts_df['chromosome_1'] = contacts_df['chromosome_1'].str[:-substring]
+        contacts_df['chromosome_2'] = contacts_df['chromosome_2'].str[:-substring]
     
     # Filter for cis contacts (same chromosome)
     cis_df = contacts_df[contacts_df["chromosome_1"] == contacts_df["chromosome_2"]].copy()
     if cis_df.empty:
         raise ValueError("No cis-contacts found in the provided DataFrame.")
 
-    # Compute bin IDs
     cis_df["bin_1"] = cis_df["start_1"] // bin_size
     cis_df["bin_2"] = cis_df["start_2"] // bin_size
 
@@ -241,20 +225,15 @@ def calculate_cis_tads(
             .reset_index(name="contact_count")
         )
 
-        # Determine size of the matrix
         max_bin_id = bin_contacts[["bin_1", "bin_2"]].max().max()
         N = max_bin_id + 1
         contact_matrix = np.zeros((N, N), dtype=float)
-
-        # Fill the contact matrix symmetrically
         for row in bin_contacts.itertuples(index=False):
             i = row.bin_1
             j = row.bin_2
             c = row.contact_count
             contact_matrix[i, j] += c
             contact_matrix[j, i] += c
-
-        # Imputation step (optional)
         if imputation_involved:
             contact_matrix = imputation(
                 contact_matrix,
@@ -265,12 +244,8 @@ def calculate_cis_tads(
         # Calculate directionality index and detect TAD boundaries
         di_vals = compute_directionality_index(contact_matrix, window=w)
         boundaries = detect_tad_boundaries(di_vals, threshold=boundary_threshold)
-
-        # Build a DataFrame containing TADs
         tad_df_chrom = build_tad_df(chrom, boundaries, N, bin_size)
         all_tads.append(tad_df_chrom)
-
-        # Plot the contact matrix and TAD boundaries
         plot_tads_for_chrom(
             contact_matrix=contact_matrix,
             boundaries=boundaries,
@@ -279,13 +254,10 @@ def calculate_cis_tads(
             show_plot=show_plot
         )
 
-    # Concatenate TAD data for all chromosomes
     tad_df = pd.concat(all_tads, ignore_index=True)
 
-    # Compute basic statistics on TAD sizes
     stats_df = compute_tad_stats(tad_df)
 
-    # Return both the statistics DataFrame and the TAD DataFrame
     return {"stats_df": stats_df, "tad_df": tad_df}
 
 
@@ -313,12 +285,8 @@ def compute_cell_features(tad_stats: pd.DataFrame, tad_boundaries: pd.DataFrame)
     """
     feature_list = []
 
-    # Iterate through each chromosome's statistics
     for chrom, stats in tad_stats.groupby("chromosome"):
-        # Determine the chromosome length in bins
         genome_length_in_bins = tad_boundaries.loc[tad_boundaries["chromosome"] == chrom, "end_bin"].max() + 1
-
-        # Get the sizes of TADs for the current chromosome
         tad_sizes = tad_boundaries.loc[tad_boundaries["chromosome"] == chrom, "size_in_bins"]
 
         # Extract relevant statistics from tad_stats
@@ -335,7 +303,6 @@ def compute_cell_features(tad_stats: pd.DataFrame, tad_boundaries: pd.DataFrame)
         max_tad_ratio = max_size / genome_length_in_bins
         min_tad_ratio = min_size / genome_length_in_bins
 
-        # Collect the results for this chromosome
         feature_list.append({
             "chromosome": chrom,
             "n_tads": n_tads,
@@ -394,7 +361,6 @@ def compute_tad_features(
         A dictionary containing the average number of TADs, average mean TAD size in bins,
         and average TAD density across all chromosomes.
     """
-    # Detect TADs and retrieve their stats and boundaries
     tad_results = calculate_cis_tads(
         contacts_df,
         bin_size=bin_size,
@@ -411,10 +377,8 @@ def compute_tad_features(
     tad_stats = tad_results["stats_df"]
     tad_boundaries = tad_results["tad_df"]
 
-    # Compute additional features based on TAD statistics
     features_df = compute_cell_features(tad_stats, tad_boundaries)
 
-    # Extract summary values
     n_tads_mean = gmean(features_df['n_tads'])
     mean_bin_size = gmean(features_df['mean_size_in_bins'])
     tad_density_mean = gmean(features_df['tad_density'])
@@ -424,5 +388,3 @@ def compute_tad_features(
         "tad_mean_bin_size": mean_bin_size,
         "tad_density_mean": tad_density_mean
     }
-
-# spróbować stosunek kwadrat do trójkąta z ins
