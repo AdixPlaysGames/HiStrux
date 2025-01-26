@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, find_namespace_packages
 
 setup(
     name="HiStrux",
@@ -9,7 +9,15 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/AdixPlaysGames/HiStrux",
-    packages=find_packages(),
+    install_requires=[
+        'pandastable>=0.13.1 '
+    ],
+
+    # packages=find_namespace_packages(where="package"),
+    # package_dir={"": "package"},
+
+    packages=find_packages(include=['HiStrux', 'HiStrux.eXtract', 'HiStrux.CycleSort', 'HiStrux.reConstruct']),
+
     license="MIT",
     python_requires=">=3.9",
     classifiers=[

@@ -1,4 +1,4 @@
-import selection as selec
+import HiStrux.reConstruct.selection as selec
 from sklearn.neighbors import KDTree
 import numpy as np
 import pandas as pd

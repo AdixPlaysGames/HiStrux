@@ -1,6 +1,6 @@
 import pandas as pd
-from package.eXtract.extract import eXtract
-from package.CycleSort.cyclesort_data import gather_features
+from HiStrux.eXtract.extract import eXtract
+from HiStrux.CycleSort.cyclesort_data import gather_features
 import tkinter as tk
 
 columns = [

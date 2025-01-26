@@ -1,5 +1,5 @@
 import pandas as pd
-from package.eXtract.primary import compute_basic_metrics
+from HiStrux.eXtract.primary import compute_basic_metrics
 
 columns = [
     "chromosome_1",  # First chromosome

@@ -5,7 +5,7 @@ import hoomd
 import itertools
 from typing import Optional, Union
 import os
-import review as rev
+import HiStrux.reConstruct.review as rev
 
 def generate_new_particles(trajectory_dir: str, 
                            next_bin: pd.Series, 

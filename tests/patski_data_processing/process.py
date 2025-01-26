@@ -1,7 +1,7 @@
 import pandas as pd
-from package.eXtract.process import process
-from package.eXtract.visualization import visualize
-from package.eXtract.imputation import imputation
+from HiStrux.eXtract.process import process
+from HiStrux.eXtract.visualization import visualize
+from HiStrux.eXtract.imputation import imputation
 
 columns = [
     "chromosome_1",  # First chromosome

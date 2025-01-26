@@ -1,5 +1,5 @@
 import pandas as pd
-from package.eXtract.compartments import calculate_cis_ab_comp
+from HiStrux.eXtract.compartments import calculate_cis_ab_comp
 
 columns = [
     "chromosome_1",  # First chromosome

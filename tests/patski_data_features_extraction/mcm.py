@@ -1,6 +1,6 @@
 import pandas as pd
-from package.eXtract.mcm import compute_mcm
-from package.eXtract.process import process
+from HiStrux.eXtract.mcm import compute_mcm
+from HiStrux.eXtract.process import process
 
 columns = [
     "chromosome_1",  # First chromosome

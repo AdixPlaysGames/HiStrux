@@ -1,1 +1,4 @@
 *.pyc
+build/
+__pycache__/
+HiStrux.egg-info

@@ -1,5 +1,5 @@
 import pandas as pd
-from package.eXtract.tad import calculate_cis_tads, compute_tad_features
+from HiStrux.eXtract.tad import calculate_cis_tads, compute_tad_features
 
 columns = [
     "chromosome_1",  # First chromosome

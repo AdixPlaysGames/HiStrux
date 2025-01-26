@@ -1,6 +1,6 @@
 import pandas as pd
-from package.eXtract.process import process
-from package.eXtract.pofs import compute_contact_scaling_exponent
+from HiStrux.eXtract.process import process
+from HiStrux.eXtract.pofs import compute_contact_scaling_exponent
 
 columns = [
     "chromosome_1",  # First chromosome

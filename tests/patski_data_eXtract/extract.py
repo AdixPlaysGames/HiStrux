@@ -1,5 +1,5 @@
 import pandas as pd
-from package.eXtract.extract import eXtract
+from HiStrux.eXtract.extract import eXtract
 import tkinter as tk
 from pandastable import Table, TableModel, config # type: ignore
 

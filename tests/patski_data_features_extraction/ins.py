@@ -1,9 +1,9 @@
 import pandas as pd
-from package.eXtract.process import process
-from package.eXtract.ins import compute_insulation_features
-from package.eXtract.ins import compute_insulation_scores
-from package.eXtract.ins import compute_ins_features_for_each_chr
-from package.eXtract.imputation import imputation
+from HiStrux.eXtract.process import process
+from HiStrux.eXtract.ins import compute_insulation_features
+from HiStrux.eXtract.ins import compute_insulation_scores
+from HiStrux.eXtract.ins import compute_ins_features_for_each_chr
+from HiStrux.eXtract.imputation import imputation
 
 columns = [
     "chromosome_1",  # First chromosome
