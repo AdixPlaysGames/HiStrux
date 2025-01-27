@@ -65,7 +65,10 @@ By focusing on both accurate feature extraction and more informed simulation run
 <img src="./addit_files/logo/reconstruct.png" alt="Extract Logo" style="width: 100%; float: left; margin-right: 10px;" />
 <p style="text-align: justify;">
 </p>
-**reConstruct** was created for iterative 3D reconstruction of chromatin structures using scHi-C matrices (including enriched matrices based on classification results taken from the example of CycleSort).
+
+**reConstruct** was created for iterative 3D reconstruction of chromatin structures using scHi-C matrices (including enriched matrices based on classification results, as in CycleSort). It builds upon HOOMD-blue, a Python package for running simulations of particle systems on CPUs and GPUs, widely used in soft matter research. 
+
+[Learn more about HOOMD-blue] - https://hoomd-blue.readthedocs.io/en/v5.0.1/#
 
 ### Key Features:
 - Resolution scaling of scHi-C matrices (from low to high) with iterative simulation runs.
@@ -196,5 +199,16 @@ The average accuracy of the model is 74%. Results can be shown on a plot:
 </p>
 
 
+<div style="text-align: center; margin-bottom: 20px;">
+    <hr style="border: 1px solid white; width: 80%; margin: 0 auto;" />
+</div>
 
+### Wishing You Successful Analyses with HiStrux  
+
+We hope **HiStrux** proves to be a useful tool in your research, enabling deeper insights into chromatin organization and single-cell heterogeneity. Whether you're exploring new biological insights or refining your computational pipelines, we trust that HiStrux will become a valuable companion in your journey. If you have any feedback, questions, or ideas for future developments, don't hesitate to reach out or contribute to the project.
+
+May your analyses be accurate, your reconstructions insightful, and your discoveries groundbreaking.
+
+With best regards,  
+**Wiktor Wierzchowski** & **Adrian Zaręba**  
 
