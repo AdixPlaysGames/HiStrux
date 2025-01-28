@@ -604,6 +604,8 @@ def perform_many_reconstructions(dir_str: str,
         Controls number of runs
     stop_early : Optional[int] = 0
         Limits number of iterations stopping reconstruction earlier.
+    logs : Optional[str] = 'runs'
+        Set to 'runs' or 'iterations' to control printing of steps taking place. Default value is 'runs'.
 
     Returns
     -------
