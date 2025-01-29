@@ -125,7 +125,7 @@ To install **HiStrux** locally, follow these steps:
 <p style="text-align: justify;">
 </p>
 
-HiStrux's **reConstruct** module enables the enrichment of results by incorporating an additional variable: the assignment vector to interphase stages. By extracting data using the **eXtract** module, you can create various models, including classifiers for interphase stages. **CycleSort** is one such proposal, and below is a complete example implementation:
+HiStrux's **reConstruct** module enables the enrichment of results by incorporating an additional variable: the assignment vector to interphase stages. By extracting data using the **eXtract** module, you can create various models, including classifiers for interphase stages. **CycleSort** is one such proposal, and below is an example implementation:
 
 ```python
 import numpy as np
