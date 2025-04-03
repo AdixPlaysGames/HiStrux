@@ -33,7 +33,7 @@ def eXtract(cell_dataframe: pd.DataFrame,
             ins_p: float=0.85,
             ins_w: int = 3,
 
-            # mcm | tutaj wywalone
+            # mcm
             near_threshold: float = 2.0,
             mid_threshold: float=6.0,
 
@@ -219,11 +219,9 @@ def eXtract(cell_dataframe: pd.DataFrame,
             root.geometry(f"{window_width}x{window_height}")
 
             x_icon = tk.PhotoImage(width=16, height=16)
-            # Najpierw wypełniamy tło białym
             for x in range(16):
                 for y in range(16):
                     x_icon.put("white", (x, y))
-            # Rysujemy dwie linie tworzące 'X'
             for i in range(16):
                 x_icon.put("black", (i, i))
                 x_icon.put("black", (15 - i, i))
